@@ -5,9 +5,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SellerProductController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +36,22 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::put('reviews/{review}', [ReviewController::class, 'update']);
 
+    // Discount validation (buyer use)
+    Route::post('vouchers/validate', [VoucherController::class, 'validate']);
+    Route::post('promos/validate', [PromoController::class, 'validate']);
+
+    // Admin - vouchers
+    Route::get('admin/vouchers', [VoucherController::class, 'index']);
+    Route::get('admin/vouchers/{voucher}', [VoucherController::class, 'show']);
+    Route::post('admin/vouchers', [VoucherController::class, 'store']);
+    Route::delete('admin/vouchers/{voucher}', [VoucherController::class, 'destroy']);
+
+    // Admin - promos
+    Route::get('admin/promos', [PromoController::class, 'index']);
+    Route::get('admin/promos/{promo}', [PromoController::class, 'show']);
+    Route::post('admin/promos', [PromoController::class, 'store']);
+    Route::delete('admin/promos/{promo}', [PromoController::class, 'destroy']);
+
     // Seller - store
     Route::get('seller/store', [StoreController::class, 'show']);
     Route::post('seller/store', [StoreController::class, 'store']);
@@ -47,6 +65,8 @@ Route::middleware('auth:api')->group(function () {
 
     // Seller - orders
     Route::get('seller/orders', [OrderController::class, 'sellerOrders']);
+    Route::patch('seller/orders/{order}/process', [OrderController::class, 'processOrder']);
+    Route::get('seller/report', [OrderController::class, 'sellerReport']);
 
     // Buyer - wallet
     Route::get('buyer/wallet', [WalletController::class, 'show']);
@@ -72,4 +92,5 @@ Route::middleware('auth:api')->group(function () {
     Route::post('buyer/checkout', [OrderController::class, 'checkout']);
     Route::get('buyer/orders', [OrderController::class, 'index']);
     Route::get('buyer/orders/{order}', [OrderController::class, 'show']);
+    Route::get('buyer/report', [OrderController::class, 'buyerReport']);
 });
