@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OverdueController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ReviewController;
@@ -40,6 +42,19 @@ Route::middleware('auth:api')->group(function () {
     // Discount validation (buyer use)
     Route::post('vouchers/validate', [VoucherController::class, 'validate']);
     Route::post('promos/validate', [PromoController::class, 'validate']);
+
+    // Admin - monitoring
+    Route::get('admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('admin/users', [AdminController::class, 'users']);
+    Route::get('admin/stores', [AdminController::class, 'stores']);
+    Route::get('admin/products', [AdminController::class, 'products']);
+    Route::get('admin/orders', [AdminController::class, 'orders']);
+    Route::get('admin/deliveries', [AdminController::class, 'deliveries']);
+    Route::get('admin/overdue', [AdminController::class, 'overdueOrders']);
+
+    // Admin - overdue handling
+    Route::post('admin/overdue/process', [OverdueController::class, 'processOverdue']);
+    Route::post('admin/simulate-next-day', [OverdueController::class, 'simulateNextDay']);
 
     // Admin - vouchers
     Route::get('admin/vouchers', [VoucherController::class, 'index']);
