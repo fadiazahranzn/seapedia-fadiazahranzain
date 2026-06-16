@@ -33,7 +33,7 @@ class WalletController extends Controller
         if ($err = $this->ensureBuyer()) return $err;
 
         $data = $request->validate([
-            'amount' => 'required|numeric|min:10000|max:10000000',
+            'amount' => 'required|integer|min:10000|max:10000000',
         ]);
 
         $wallet = $request->user()->wallet;

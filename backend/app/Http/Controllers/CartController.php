@@ -34,7 +34,7 @@ class CartController extends Controller
 
         $data = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity'   => 'required|integer|min:1',
+            'quantity'   => 'required|integer|min:1|max:9999',
         ]);
 
         $product = Product::with('store')->findOrFail($data['product_id']);
@@ -93,7 +93,7 @@ class CartController extends Controller
             return response()->json(['message' => 'Bukan item kamu.'], 403);
         }
 
-        $data = $request->validate(['quantity' => 'required|integer|min:1']);
+        $data = $request->validate(['quantity' => 'required|integer|min:1|max:9999']);
 
         if ($item->product->stock < $data['quantity']) {
             return response()->json(['message' => 'Stok tidak mencukupi.'], 422);

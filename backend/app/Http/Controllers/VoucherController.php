@@ -64,12 +64,16 @@ class VoucherController extends Controller
             'code'           => 'required|string|max:50|unique:vouchers,code',
             'description'    => 'nullable|string|max:255',
             'discount_type'  => 'required|in:percentage,fixed',
-            'discount_value' => 'required|numeric|min:0',
+            'discount_value' => 'required|numeric|min:0.01',
             'min_purchase'   => 'nullable|numeric|min:0',
             'max_discount'   => 'nullable|numeric|min:0',
             'usage_limit'    => 'required|integer|min:1',
             'expires_at'     => 'required|date|after:now',
         ]);
+
+        if ($data['discount_type'] === 'percentage' && $data['discount_value'] > 100) {
+            return response()->json(['message' => 'Nilai diskon persentase tidak boleh melebihi 100%.'], 422);
+        }
 
         $data['code'] = strtoupper($data['code']);
         $voucher = Voucher::create($data);
