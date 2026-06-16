@@ -85,6 +85,14 @@ const loading = ref(false)
 
 async function handleRegister() {
   error.value = ''
+  if (form.value.password.length < 6) {
+    error.value = 'Password minimal 6 karakter.'
+    return
+  }
+  if (form.value.password !== form.value.password_confirmation) {
+    error.value = 'Konfirmasi password tidak cocok.'
+    return
+  }
   loading.value = true
   try {
     await auth.register(form.value)

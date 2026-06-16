@@ -130,8 +130,32 @@ function resetForm() {
 }
 
 async function createVoucher() {
-  saving.value = true
   formError.value = ''
+  if (!form.code.trim()) {
+    formError.value = 'Kode voucher wajib diisi.'
+    return
+  }
+  if (!form.discount_value || parseFloat(form.discount_value) <= 0) {
+    formError.value = 'Nilai diskon wajib diisi dan harus lebih dari 0.'
+    return
+  }
+  if (form.discount_type === 'percentage' && parseFloat(form.discount_value) > 100) {
+    formError.value = 'Nilai diskon persentase tidak boleh melebihi 100%.'
+    return
+  }
+  if (!form.usage_limit || parseInt(form.usage_limit) < 1) {
+    formError.value = 'Batas penggunaan minimal 1.'
+    return
+  }
+  if (!form.expires_at) {
+    formError.value = 'Tanggal kadaluarsa wajib diisi.'
+    return
+  }
+  if (new Date(form.expires_at) <= new Date()) {
+    formError.value = 'Tanggal kadaluarsa harus di masa depan.'
+    return
+  }
+  saving.value = true
   try {
     const payload = {
       code: form.code,

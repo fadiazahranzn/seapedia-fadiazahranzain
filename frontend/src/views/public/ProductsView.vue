@@ -11,13 +11,32 @@
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input v-model="search" placeholder="Cari produk..." class="pl-9" @input="debouncedFetch" />
       </div>
-      <select v-model="category" class="border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" @change="fetchProducts">
+      <select v-model="category" class="border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" @change="onFilterChange">
         <option value="">Semua Kategori</option>
         <option value="Electronics">Electronics</option>
         <option value="Fashion">Fashion</option>
         <option value="Food">Food</option>
         <option value="Kosmetik">Kosmetik</option>
+        <option value="Other">Other</option>
       </select>
+      <select v-model="sort" class="border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" @change="onFilterChange">
+        <option value="terbaru">Terbaru</option>
+        <option value="harga_asc">Harga: Rendah ke Tinggi</option>
+        <option value="harga_desc">Harga: Tinggi ke Rendah</option>
+      </select>
+    </div>
+
+    <!-- Active filters indicator -->
+    <div v-if="category || search" class="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+      <span>Filter aktif:</span>
+      <span v-if="search" class="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+        "{{ search }}"
+        <button @click="search = ''; onFilterChange()" class="hover:text-primary/70">✕</button>
+      </span>
+      <span v-if="category" class="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+        {{ category }}
+        <button @click="category = ''; onFilterChange()" class="hover:text-primary/70">✕</button>
+      </span>
     </div>
 
     <!-- Products -->
@@ -28,6 +47,7 @@
     <div v-else-if="products.length === 0" class="text-center py-16 text-muted-foreground">
       <Package class="w-12 h-12 mx-auto mb-3 opacity-30" />
       <p>Tidak ada produk ditemukan.</p>
+      <button v-if="category || search" @click="resetFilters" class="mt-3 text-sm text-primary hover:underline">Reset filter</button>
     </div>
 
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -64,7 +84,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Search, Package } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -73,11 +93,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import api from '@/services/api'
 
 const router = useRouter()
+const route = useRoute()
+
 const products = ref([])
 const loading = ref(true)
-const search = ref('')
-const category = ref('')
-const page = ref(1)
+const search = ref(route.query.search || '')
+const category = ref(route.query.category || '')
+const sort = ref(route.query.sort || 'terbaru')
+const page = ref(Number(route.query.page) || 1)
 const lastPage = ref(1)
 
 let debounceTimer = null
@@ -86,20 +109,49 @@ function debouncedFetch() {
   debounceTimer = setTimeout(() => { page.value = 1; fetchProducts() }, 400)
 }
 
+function onFilterChange() {
+  page.value = 1
+  fetchProducts()
+}
+
+function resetFilters() {
+  search.value = ''
+  category.value = ''
+  sort.value = 'terbaru'
+  page.value = 1
+  fetchProducts()
+}
+
 function formatPrice(price) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price)
 }
 
+function syncUrl() {
+  const query = {}
+  if (search.value) query.search = search.value
+  if (category.value) query.category = category.value
+  if (sort.value !== 'terbaru') query.sort = sort.value
+  if (page.value > 1) query.page = page.value
+  router.replace({ query })
+}
+
 async function fetchProducts() {
   loading.value = true
+  syncUrl()
   try {
     const { data } = await api.get('/products', {
-      params: { search: search.value || undefined, category: category.value || undefined, page: page.value, per_page: 12 },
+      params: {
+        search: search.value || undefined,
+        category: category.value || undefined,
+        sort: sort.value !== 'terbaru' ? sort.value : undefined,
+        page: page.value,
+        per_page: 12,
+      },
     })
     products.value = data.data || data
     lastPage.value = data.last_page || 1
   } catch {
-    products.value = dummyProducts
+    products.value = []
   } finally {
     loading.value = false
   }
@@ -110,13 +162,6 @@ function changePage(p) {
   fetchProducts()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
-
-const dummyProducts = [
-  { id: 1, name: 'Laptop Gaming XYZ', price: 12000000, stock: 10, category: 'Electronics', store: { name: 'Toko Elektronik Makmur' } },
-  { id: 2, name: 'Smartphone Pro Max', price: 5500000, stock: 25, category: 'Electronics', store: { name: 'Toko Elektronik Makmur' } },
-  { id: 3, name: 'Kaos Polos Premium', price: 150000, stock: 100, category: 'Fashion', store: { name: 'Fashion Keren Store' } },
-  { id: 4, name: 'Celana Chino Slim Fit', price: 275000, stock: 50, category: 'Fashion', store: { name: 'Fashion Keren Store' } },
-]
 
 onMounted(fetchProducts)
 </script>

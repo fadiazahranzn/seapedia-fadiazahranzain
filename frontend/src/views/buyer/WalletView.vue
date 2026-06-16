@@ -123,7 +123,16 @@ async function loadTransactions() {
 }
 
 async function doTopUp() {
-  if (!topUpAmount.value) return
+  const amount = Number(topUpAmount.value)
+  topUpError.value = ''
+  if (!amount || amount < 10000) {
+    topUpError.value = 'Minimal top up adalah Rp 10.000.'
+    return
+  }
+  if (amount > 10000000) {
+    topUpError.value = 'Maksimal top up adalah Rp 10.000.000.'
+    return
+  }
   topping.value = true
   topUpError.value = ''
   try {

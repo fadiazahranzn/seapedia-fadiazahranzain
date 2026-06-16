@@ -1,0 +1,732 @@
+{
+  "info": {
+    "name": "SEAPEDIA API",
+    "description": "API documentation untuk platform e-commerce SEAPEDIA. Base URL: http://localhost:8000/api\n\nCara pakai:\n1. Set variable `base_url` = http://localhost:8000/api\n2. Login via POST /auth/login, copy token\n3. Set variable `token` dengan token hasil login",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"username\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"role\": \"buyer\",\n  \"phone\": \"081234567890\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) { pm.collectionVariables.set('token', res.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"buyer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "Switch Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) { pm.collectionVariables.set('token', res.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/switch-role", "host": ["{{base_url}}"], "path": ["auth", "switch-role"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"seller\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public - Produk & Toko",
+      "item": [
+        {
+          "name": "Daftar Produk",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/products?search=laptop&category=Electronics&sort=harga_asc&per_page=12&page=1",
+              "host": ["{{base_url}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "search", "value": "laptop", "description": "Cari berdasarkan nama produk" },
+                { "key": "category", "value": "Electronics", "description": "Filter kategori: Electronics, Fashion, Food, Kosmetik, Other" },
+                { "key": "sort", "value": "harga_asc", "description": "Urutan: terbaru (default), harga_asc, harga_desc" },
+                { "key": "store_id", "value": "", "description": "Filter berdasarkan toko", "disabled": true },
+                { "key": "per_page", "value": "12", "description": "Jumlah per halaman (max 50)" },
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detail Produk",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/products/1", "host": ["{{base_url}}"], "path": ["products", "1"] }
+          }
+        },
+        {
+          "name": "Profil Toko Publik",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/stores/nama-toko-slug", "host": ["{{base_url}}"], "path": ["stores", "nama-toko-slug"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public - Ulasan",
+      "item": [
+        {
+          "name": "Daftar Ulasan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] }
+          }
+        },
+        {
+          "name": "Tulis Ulasan",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews", "host": ["{{base_url}}"], "path": ["reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer_name\": \"John Doe\",\n  \"rating\": 5,\n  \"comment\": \"Platform yang sangat bagus!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Edit Ulasan",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/reviews/1", "host": ["{{base_url}}"], "path": ["reviews", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Ulasan yang sudah diedit.\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Wallet",
+      "item": [
+        {
+          "name": "Info Saldo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/wallet", "host": ["{{base_url}}"], "path": ["buyer", "wallet"] }
+          }
+        },
+        {
+          "name": "Top Up Saldo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/wallet/topup", "host": ["{{base_url}}"], "path": ["buyer", "wallet", "topup"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "amount: integer, min 10000, max 10000000"
+          }
+        },
+        {
+          "name": "Riwayat Transaksi",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/wallet/transactions", "host": ["{{base_url}}"], "path": ["buyer", "wallet", "transactions"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Alamat",
+      "item": [
+        {
+          "name": "Daftar Alamat",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/addresses", "host": ["{{base_url}}"], "path": ["buyer", "addresses"] }
+          }
+        },
+        {
+          "name": "Tambah Alamat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/addresses", "host": ["{{base_url}}"], "path": ["buyer", "addresses"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Rumah\",\n  \"recipient_name\": \"John Doe\",\n  \"phone\": \"081234567890\",\n  \"full_address\": \"Jl. Contoh No. 1\",\n  \"province\": \"DKI Jakarta\",\n  \"city\": \"Jakarta Selatan\",\n  \"district\": \"Kebayoran Baru\",\n  \"postal_code\": \"12160\",\n  \"is_default\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Edit Alamat",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/addresses/1", "host": ["{{base_url}}"], "path": ["buyer", "addresses", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Rumah\",\n  \"recipient_name\": \"John Doe\",\n  \"phone\": \"081234567890\",\n  \"full_address\": \"Jl. Baru No. 2\",\n  \"province\": \"DKI Jakarta\",\n  \"city\": \"Jakarta Selatan\",\n  \"district\": \"Kebayoran Baru\",\n  \"postal_code\": \"12160\",\n  \"is_default\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Set Alamat Utama",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/addresses/1/default", "host": ["{{base_url}}"], "path": ["buyer", "addresses", "1", "default"] }
+          }
+        },
+        {
+          "name": "Hapus Alamat",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/addresses/1", "host": ["{{base_url}}"], "path": ["buyer", "addresses", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Keranjang",
+      "item": [
+        {
+          "name": "Lihat Keranjang",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/cart", "host": ["{{base_url}}"], "path": ["buyer", "cart"] }
+          }
+        },
+        {
+          "name": "Tambah Item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/cart/items", "host": ["{{base_url}}"], "path": ["buyer", "cart", "items"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": 1,\n  \"quantity\": 2\n}"
+            },
+            "description": "Keranjang hanya bisa berisi produk dari 1 toko. quantity: integer, min 1, max 9999"
+          }
+        },
+        {
+          "name": "Update Jumlah Item",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/cart/items/1", "host": ["{{base_url}}"], "path": ["buyer", "cart", "items", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "Hapus Item",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/cart/items/1", "host": ["{{base_url}}"], "path": ["buyer", "cart", "items", "1"] }
+          }
+        },
+        {
+          "name": "Kosongkan Keranjang",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/cart", "host": ["{{base_url}}"], "path": ["buyer", "cart"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Checkout & Pesanan",
+      "item": [
+        {
+          "name": "Validasi Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/vouchers/validate", "host": ["{{base_url}}"], "path": ["vouchers", "validate"] },
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"HEMAT20\"\n}" }
+          }
+        },
+        {
+          "name": "Validasi Promo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/promos/validate", "host": ["{{base_url}}"], "path": ["promos", "validate"] },
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"FLASHSALE\"\n}" }
+          }
+        },
+        {
+          "name": "Preview Checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/checkout/preview", "host": ["{{base_url}}"], "path": ["buyer", "checkout", "preview"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_method\": \"regular\",\n  \"voucher_code\": \"HEMAT20\",\n  \"promo_code\": \"FLASHSALE\"\n}"
+            },
+            "description": "delivery_method: instant (Rp 25.000) | next_day (Rp 15.000) | regular (Rp 10.000)"
+          }
+        },
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/checkout", "host": ["{{base_url}}"], "path": ["buyer", "checkout"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_id\": 1,\n  \"delivery_method\": \"regular\",\n  \"voucher_code\": \"HEMAT20\",\n  \"promo_code\": \"FLASHSALE\"\n}"
+            },
+            "description": "Saldo wallet akan dipotong otomatis. Total = subtotal + ongkir - diskon + PPN 12%"
+          }
+        },
+        {
+          "name": "Daftar Pesanan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/orders", "host": ["{{base_url}}"], "path": ["buyer", "orders"] }
+          }
+        },
+        {
+          "name": "Detail Pesanan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/orders/1", "host": ["{{base_url}}"], "path": ["buyer", "orders", "1"] }
+          }
+        },
+        {
+          "name": "Tracking Pesanan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/orders/1/tracking", "host": ["{{base_url}}"], "path": ["buyer", "orders", "1", "tracking"] }
+          }
+        },
+        {
+          "name": "Laporan Pengeluaran",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/buyer/report", "host": ["{{base_url}}"], "path": ["buyer", "report"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller - Toko",
+      "item": [
+        {
+          "name": "Info Toko Saya",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/store", "host": ["{{base_url}}"], "path": ["seller", "store"] }
+          }
+        },
+        {
+          "name": "Buat Toko",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/store", "host": ["{{base_url}}"], "path": ["seller", "store"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toko Saya\",\n  \"description\": \"Deskripsi toko saya\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Toko",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/store", "host": ["{{base_url}}"], "path": ["seller", "store"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toko Saya Update\",\n  \"description\": \"Deskripsi baru\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller - Produk",
+      "item": [
+        {
+          "name": "Daftar Produk Saya",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/products", "host": ["{{base_url}}"], "path": ["seller", "products"] }
+          }
+        },
+        {
+          "name": "Tambah Produk",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/products", "host": ["{{base_url}}"], "path": ["seller", "products"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laptop Gaming\",\n  \"category\": \"Electronics\",\n  \"brand\": \"BrandX\",\n  \"description\": \"Laptop gaming terbaik\",\n  \"price\": 12000000,\n  \"stock\": 10,\n  \"weight\": 2500,\n  \"image_url\": \"https://example.com/laptop.jpg\"\n}"
+            },
+            "description": "price: integer, min 1 | stock: integer, min 0 | category: Electronics, Fashion, Food, Kosmetik, Other"
+          }
+        },
+        {
+          "name": "Edit Produk",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/products/1", "host": ["{{base_url}}"], "path": ["seller", "products", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laptop Gaming Pro\",\n  \"category\": \"Electronics\",\n  \"brand\": \"BrandX\",\n  \"description\": \"Versi terbaru\",\n  \"price\": 13000000,\n  \"stock\": 5,\n  \"weight\": 2500,\n  \"image_url\": \"https://example.com/laptop-pro.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Hapus Produk",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/products/1", "host": ["{{base_url}}"], "path": ["seller", "products", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller - Pesanan",
+      "item": [
+        {
+          "name": "Daftar Pesanan Masuk",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/orders", "host": ["{{base_url}}"], "path": ["seller", "orders"] }
+          }
+        },
+        {
+          "name": "Proses Pesanan",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/orders/1/process", "host": ["{{base_url}}"], "path": ["seller", "orders", "1", "process"] },
+            "description": "Status pesanan berubah dari sedang_dikemas → menunggu_pengirim. Driver dapat mulai mengambil job."
+          }
+        },
+        {
+          "name": "Tracking Pesanan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/orders/1/tracking", "host": ["{{base_url}}"], "path": ["seller", "orders", "1", "tracking"] }
+          }
+        },
+        {
+          "name": "Laporan Pendapatan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/seller/report", "host": ["{{base_url}}"], "path": ["seller", "report"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Driver",
+      "item": [
+        {
+          "name": "Job Tersedia",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/driver/jobs", "host": ["{{base_url}}"], "path": ["driver", "jobs"] }
+          }
+        },
+        {
+          "name": "Detail Job",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/driver/jobs/1", "host": ["{{base_url}}"], "path": ["driver", "jobs", "1"] }
+          }
+        },
+        {
+          "name": "Ambil Job",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/driver/jobs/1/take", "host": ["{{base_url}}"], "path": ["driver", "jobs", "1", "take"] },
+            "description": "Status delivery: available → taken. Status order: menunggu_pengirim → sedang_dikirim."
+          }
+        },
+        {
+          "name": "Selesaikan Job",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/driver/jobs/1/complete", "host": ["{{base_url}}"], "path": ["driver", "jobs", "1", "complete"] },
+            "description": "Status delivery: taken → completed. Status order: sedang_dikirim → pesanan_selesai. Driver mendapat 80% dari delivery fee."
+          }
+        },
+        {
+          "name": "Job Aktif Saya",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/driver/active-job", "host": ["{{base_url}}"], "path": ["driver", "active-job"] }
+          }
+        },
+        {
+          "name": "Riwayat Job & Penghasilan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/driver/my-jobs", "host": ["{{base_url}}"], "path": ["driver", "my-jobs"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Dashboard & Monitoring",
+      "item": [
+        {
+          "name": "Dashboard Statistik",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/dashboard", "host": ["{{base_url}}"], "path": ["admin", "dashboard"] }
+          }
+        },
+        {
+          "name": "Daftar User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/users", "host": ["{{base_url}}"], "path": ["admin", "users"] }
+          }
+        },
+        {
+          "name": "Daftar Toko",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/stores", "host": ["{{base_url}}"], "path": ["admin", "stores"] }
+          }
+        },
+        {
+          "name": "Daftar Produk",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/products", "host": ["{{base_url}}"], "path": ["admin", "products"] }
+          }
+        },
+        {
+          "name": "Daftar Pesanan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/orders", "host": ["{{base_url}}"], "path": ["admin", "orders"] }
+          }
+        },
+        {
+          "name": "Daftar Pengiriman",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/deliveries", "host": ["{{base_url}}"], "path": ["admin", "deliveries"] }
+          }
+        },
+        {
+          "name": "Daftar Pesanan Overdue",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/overdue", "host": ["{{base_url}}"], "path": ["admin", "overdue"] }
+          }
+        },
+        {
+          "name": "Proses Semua Overdue",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/overdue/process", "host": ["{{base_url}}"], "path": ["admin", "overdue", "process"] },
+            "description": "Pesanan overdue akan dikembalikan, buyer di-refund, pendapatan seller di-reversal, stok produk dikembalikan."
+          }
+        },
+        {
+          "name": "Simulasi Hari Berikutnya",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/simulate-next-day", "host": ["{{base_url}}"], "path": ["admin", "simulate-next-day"] },
+            "description": "Mundurkan created_at semua pesanan aktif 1 hari untuk keperluan testing overdue."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Voucher",
+      "item": [
+        {
+          "name": "Daftar Voucher",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/vouchers", "host": ["{{base_url}}"], "path": ["admin", "vouchers"] }
+          }
+        },
+        {
+          "name": "Detail Voucher",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/vouchers/1", "host": ["{{base_url}}"], "path": ["admin", "vouchers", "1"] }
+          }
+        },
+        {
+          "name": "Buat Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/vouchers", "host": ["{{base_url}}"], "path": ["admin", "vouchers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"HEMAT20\",\n  \"description\": \"Diskon 20% untuk semua produk\",\n  \"discount_type\": \"percentage\",\n  \"discount_value\": 20,\n  \"min_purchase\": 50000,\n  \"max_discount\": 100000,\n  \"usage_limit\": 100,\n  \"expires_at\": \"2026-12-31T23:59:59\"\n}"
+            },
+            "description": "discount_type: percentage | fixed\ndiscount_value: jika percentage, max 100\nusage_limit: min 1"
+          }
+        },
+        {
+          "name": "Hapus Voucher",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/vouchers/1", "host": ["{{base_url}}"], "path": ["admin", "vouchers", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Promo",
+      "item": [
+        {
+          "name": "Daftar Promo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/promos", "host": ["{{base_url}}"], "path": ["admin", "promos"] }
+          }
+        },
+        {
+          "name": "Detail Promo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/promos/1", "host": ["{{base_url}}"], "path": ["admin", "promos", "1"] }
+          }
+        },
+        {
+          "name": "Buat Promo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/promos", "host": ["{{base_url}}"], "path": ["admin", "promos"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"FLASHSALE\",\n  \"description\": \"Flash sale akhir tahun\",\n  \"discount_type\": \"fixed\",\n  \"discount_value\": 50000,\n  \"min_purchase\": 200000,\n  \"max_discount\": null,\n  \"expires_at\": \"2026-12-31T23:59:59\"\n}"
+            },
+            "description": "discount_type: percentage | fixed\ndiscount_value: jika percentage, max 100"
+          }
+        },
+        {
+          "name": "Hapus Promo",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/promos/1", "host": ["{{base_url}}"], "path": ["admin", "promos", "1"] }
+          }
+        }
+      ]
+    }
+  ]
+}

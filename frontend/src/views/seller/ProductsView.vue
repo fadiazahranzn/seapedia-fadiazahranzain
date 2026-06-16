@@ -76,7 +76,7 @@
               </div>
               <div class="space-y-2">
                 <Label>Harga (Rp) *</Label>
-                <Input v-model="form.price" type="number" min="0" required placeholder="0" />
+                <Input v-model="form.price" type="number" min="1" required placeholder="0" />
               </div>
               <div class="space-y-2">
                 <Label>Stok *</Label>
@@ -189,8 +189,12 @@ function openForm(product = null) {
 }
 
 async function submitForm() {
-  submitting.value = true
   formError.value = ''
+  if (Number(form.value.price) < 1) {
+    formError.value = 'Harga produk minimal Rp 1.'
+    return
+  }
+  submitting.value = true
   try {
     if (editingProduct.value) {
       await sellerApi.updateProduct(editingProduct.value.id, form.value)
