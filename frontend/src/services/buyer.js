@@ -21,8 +21,13 @@ export const buyerApi = {
   clearCart: () => api.delete('/buyer/cart'),
 
   // Orders
-  previewCheckout: (delivery_method) => api.post('/buyer/checkout/preview', { delivery_method }),
+  previewCheckout: (data) => api.post('/buyer/checkout/preview', data),
   checkout: (data) => api.post('/buyer/checkout', data),
   getOrders: () => api.get('/buyer/orders'),
   getOrder: (id) => api.get(`/buyer/orders/${id}`),
+  getReport: () => api.get('/buyer/report'),
+
+  // Discounts
+  validateVoucher: (code) => api.post('/vouchers/validate', { code }),
+  validatePromo: (code) => api.post('/promos/validate', { code }),
 }

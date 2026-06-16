@@ -63,6 +63,7 @@
           <CardContent class="pt-6 space-y-4">
             <h2 class="font-semibold">Ringkasan Pesanan</h2>
 
+            <!-- Delivery Method -->
             <div class="space-y-2">
               <Label>Metode Pengiriman</Label>
               <div class="space-y-2">
@@ -81,10 +82,50 @@
               </div>
             </div>
 
+            <!-- Voucher -->
+            <div class="space-y-2">
+              <Label>Kode Voucher <span class="text-muted-foreground font-normal">(opsional)</span></Label>
+              <div class="flex gap-2">
+                <Input v-model="voucherCode" placeholder="Contoh: SEAPEDIA10" class="uppercase" @keyup.enter="applyVoucher" />
+                <Button variant="outline" size="sm" @click="applyVoucher" :disabled="applyingVoucher">
+                  {{ appliedVoucher ? 'Hapus' : 'Pakai' }}
+                </Button>
+              </div>
+              <p v-if="voucherError" class="text-destructive text-xs">{{ voucherError }}</p>
+              <p v-if="appliedVoucher" class="text-green-600 text-xs flex items-center gap-1">
+                <CheckCircle class="w-3 h-3" /> Voucher "{{ appliedVoucher.code }}" berhasil dipakai
+              </p>
+            </div>
+
+            <!-- Promo -->
+            <div class="space-y-2">
+              <Label>Kode Promo <span class="text-muted-foreground font-normal">(opsional)</span></Label>
+              <div class="flex gap-2">
+                <Input v-model="promoCode" placeholder="Contoh: FLASHSALE" class="uppercase" @keyup.enter="applyPromo" />
+                <Button variant="outline" size="sm" @click="applyPromo" :disabled="applyingPromo">
+                  {{ appliedPromo ? 'Hapus' : 'Pakai' }}
+                </Button>
+              </div>
+              <p v-if="promoError" class="text-destructive text-xs">{{ promoError }}</p>
+              <p v-if="appliedPromo" class="text-green-600 text-xs flex items-center gap-1">
+                <CheckCircle class="w-3 h-3" /> Promo "{{ appliedPromo.code }}" berhasil dipakai
+              </p>
+            </div>
+
+            <!-- Price breakdown -->
             <div v-if="preview" class="divide-y text-sm space-y-2">
               <div class="pb-2 space-y-1">
                 <div class="flex justify-between"><span class="text-muted-foreground">Subtotal</span><span>{{ formatPrice(preview.subtotal) }}</span></div>
+                <div v-if="preview.voucher_discount > 0" class="flex justify-between text-green-600">
+                  <span>Diskon Voucher</span><span>-{{ formatPrice(preview.voucher_discount) }}</span>
+                </div>
+                <div v-if="preview.promo_discount > 0" class="flex justify-between text-green-600">
+                  <span>Diskon Promo</span><span>-{{ formatPrice(preview.promo_discount) }}</span>
+                </div>
                 <div class="flex justify-between"><span class="text-muted-foreground">Ongkir</span><span>{{ formatPrice(preview.delivery_fee) }}</span></div>
+                <div class="flex justify-between text-muted-foreground text-xs">
+                  <span>Dasar PPN</span><span>{{ formatPrice(preview.tax_base) }}</span>
+                </div>
                 <div class="flex justify-between"><span class="text-muted-foreground">PPN 12%</span><span>{{ formatPrice(preview.ppn_amount) }}</span></div>
               </div>
               <div class="pt-2 flex justify-between font-bold">
@@ -92,6 +133,7 @@
               </div>
             </div>
 
+            <!-- Address -->
             <div class="space-y-2">
               <Label>Alamat Pengiriman</Label>
               <select v-model="selectedAddress" class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring">
@@ -118,9 +160,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ShoppingCart, Store, Package, Plus, Minus, Trash2 } from '@lucide/vue'
+import { ShoppingCart, Store, Package, Plus, Minus, Trash2, CheckCircle } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { buyerApi } from '@/services/buyer'
 import { toast } from 'vue-sonner'
@@ -134,6 +177,15 @@ const selectedMethod = ref('regular')
 const selectedAddress = ref('')
 const checkingOut = ref(false)
 const checkoutError = ref('')
+
+const voucherCode = ref('')
+const promoCode = ref('')
+const appliedVoucher = ref(null)
+const appliedPromo = ref(null)
+const voucherError = ref('')
+const promoError = ref('')
+const applyingVoucher = ref(false)
+const applyingPromo = ref(false)
 
 const deliveryMethods = [
   { value: 'instant', label: 'Instant', desc: 'Hari yang sama', fee: 25000 },
@@ -166,9 +218,55 @@ async function loadAddresses() {
 async function loadPreview() {
   if (!cart.value?.items?.length) return
   try {
-    const { data } = await buyerApi.previewCheckout(selectedMethod.value)
+    const { data } = await buyerApi.previewCheckout({
+      delivery_method: selectedMethod.value,
+      voucher_code: appliedVoucher.value?.code || undefined,
+      promo_code: appliedPromo.value?.code || undefined,
+    })
     preview.value = data.data
   } catch {}
+}
+
+async function applyVoucher() {
+  if (appliedVoucher.value) {
+    appliedVoucher.value = null
+    voucherCode.value = ''
+    voucherError.value = ''
+    loadPreview()
+    return
+  }
+  if (!voucherCode.value) return
+  applyingVoucher.value = true
+  voucherError.value = ''
+  try {
+    const { data } = await buyerApi.validateVoucher(voucherCode.value)
+    appliedVoucher.value = data.data
+    loadPreview()
+    toast.success('Voucher berhasil dipakai!')
+  } catch (e) {
+    voucherError.value = e.response?.data?.message || 'Voucher tidak valid.'
+  } finally { applyingVoucher.value = false }
+}
+
+async function applyPromo() {
+  if (appliedPromo.value) {
+    appliedPromo.value = null
+    promoCode.value = ''
+    promoError.value = ''
+    loadPreview()
+    return
+  }
+  if (!promoCode.value) return
+  applyingPromo.value = true
+  promoError.value = ''
+  try {
+    const { data } = await buyerApi.validatePromo(promoCode.value)
+    appliedPromo.value = data.data
+    loadPreview()
+    toast.success('Promo berhasil dipakai!')
+  } catch (e) {
+    promoError.value = e.response?.data?.message || 'Promo tidak valid.'
+  } finally { applyingPromo.value = false }
 }
 
 async function updateQty(item, qty) {
@@ -206,7 +304,12 @@ async function doCheckout() {
   checkingOut.value = true
   checkoutError.value = ''
   try {
-    const { data } = await buyerApi.checkout({ address_id: selectedAddress.value, delivery_method: selectedMethod.value })
+    const { data } = await buyerApi.checkout({
+      address_id: selectedAddress.value,
+      delivery_method: selectedMethod.value,
+      voucher_code: appliedVoucher.value?.code || undefined,
+      promo_code: appliedPromo.value?.code || undefined,
+    })
     toast.success('Checkout berhasil!')
     router.push(`/buyer/orders/${data.data.id}`)
   } catch (e) {

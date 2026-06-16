@@ -33,6 +33,7 @@ const routes = [
       { path: 'cart', component: () => import('@/views/buyer/CartView.vue') },
       { path: 'orders', component: () => import('@/views/buyer/OrdersView.vue') },
       { path: 'orders/:id', component: () => import('@/views/buyer/OrderDetailView.vue') },
+      { path: 'report', component: () => import('@/views/buyer/ReportView.vue') },
       { path: 'products', component: () => import('@/views/public/ProductsView.vue') },
     ],
   },
@@ -47,6 +48,8 @@ const routes = [
       { path: 'dashboard', component: () => import('@/views/seller/DashboardView.vue') },
       { path: 'store', component: () => import('@/views/seller/StoreView.vue') },
       { path: 'products', component: () => import('@/views/seller/ProductsView.vue') },
+      { path: 'orders', component: () => import('@/views/seller/OrdersView.vue') },
+      { path: 'report', component: () => import('@/views/seller/ReportView.vue') },
     ],
   },
 
@@ -69,6 +72,8 @@ const routes = [
     children: [
       { path: '', redirect: '/admin/dashboard' },
       { path: 'dashboard', component: () => import('@/views/admin/DashboardView.vue') },
+      { path: 'vouchers', component: () => import('@/views/admin/VouchersView.vue') },
+      { path: 'promos', component: () => import('@/views/admin/PromosView.vue') },
     ],
   },
 

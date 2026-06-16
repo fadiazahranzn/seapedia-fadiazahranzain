@@ -11,4 +11,9 @@ export const sellerApi = {
   createProduct: (data) => api.post('/seller/products', data),
   updateProduct: (id, data) => api.put(`/seller/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/seller/products/${id}`),
+
+  // Orders
+  getOrders: () => api.get('/seller/orders'),
+  processOrder: (id) => api.patch(`/seller/orders/${id}/process`),
+  getReport: () => api.get('/seller/report'),
 }

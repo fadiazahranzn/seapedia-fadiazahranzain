@@ -83,6 +83,7 @@ const navMap = {
     { to: '/buyer/products', label: 'Produk', icon: Package },
     { to: '/buyer/cart', label: 'Keranjang', icon: ShoppingCart },
     { to: '/buyer/orders', label: 'Pesanan', icon: ClipboardList },
+    { to: '/buyer/report', label: 'Laporan', icon: History },
     { to: '/buyer/wallet', label: 'Dompet', icon: Wallet },
     { to: '/buyer/addresses', label: 'Alamat', icon: MapPin },
   ],
@@ -90,6 +91,8 @@ const navMap = {
     { to: '/seller/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/seller/products', label: 'Produk', icon: Package },
     { to: '/seller/orders', label: 'Pesanan', icon: ClipboardList },
+    { to: '/seller/report', label: 'Laporan', icon: History },
+    { to: '/seller/store', label: 'Toko', icon: Settings },
   ],
   driver: [
     { to: '/driver/jobs', label: 'Cari Job', icon: Truck },
@@ -97,10 +100,8 @@ const navMap = {
   ],
   admin: [
     { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/admin/users', label: 'Pengguna', icon: Users },
-    { to: '/admin/products', label: 'Produk', icon: Package },
-    { to: '/admin/orders', label: 'Pesanan', icon: ClipboardList },
-    { to: '/admin/vouchers', label: 'Voucher & Promo', icon: Tag },
+    { to: '/admin/vouchers', label: 'Voucher', icon: Tag },
+    { to: '/admin/promos', label: 'Promo', icon: Tag },
   ],
 }
 
