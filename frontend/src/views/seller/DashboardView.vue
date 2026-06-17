@@ -39,7 +39,7 @@
               </div>
               <div>
                 <p class="text-sm text-muted-foreground">Pesanan Masuk</p>
-                <p class="font-bold text-xl">—</p>
+                <p class="font-bold text-xl">{{ report.summary.total_orders ?? '—' }}</p>
               </div>
             </div>
           </CardContent>
@@ -52,7 +52,7 @@
               </div>
               <div>
                 <p class="text-sm text-muted-foreground">Pendapatan</p>
-                <p class="font-bold text-xl">—</p>
+                <p class="font-bold text-xl">{{ report.summary.net_income != null ? formatPrice(report.summary.net_income) : '—' }}</p>
               </div>
             </div>
           </CardContent>
@@ -93,6 +93,11 @@ const auth = useAuthStore()
 const router = useRouter()
 const store = ref(null)
 const loadingStore = ref(true)
+const report = ref({ summary: {} })
+
+function formatPrice(p) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p ?? 0)
+}
 
 onMounted(async () => {
   try {
@@ -100,5 +105,10 @@ onMounted(async () => {
     store.value = data.data
   } catch {}
   finally { loadingStore.value = false }
+
+  try {
+    const { data } = await sellerApi.getReport()
+    report.value = data.data
+  } catch {}
 })
 </script>
