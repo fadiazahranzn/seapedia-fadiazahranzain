@@ -25,21 +25,69 @@
           @input="debouncedFetch"
         />
       </div>
-      <select v-model="category" class="filter-select" @change="onFilterChange">
-        <option value="">Semua Kategori</option>
-        <option value="Electronics">Electronics</option>
-        <option value="Fashion">Fashion</option>
-        <option value="Beauty">Beauty</option>
-        <option value="Home">Home</option>
-        <option value="Sports">Sports</option>
-        <option value="Food">Food</option>
-        <option value="General">General</option>
-      </select>
-      <select v-model="sort" class="filter-select" @change="onFilterChange">
-        <option value="terbaru">Terbaru</option>
-        <option value="harga_asc">Harga: Rendah ke Tinggi</option>
-        <option value="harga_desc">Harga: Tinggi ke Rendah</option>
-      </select>
+      <div class="filter-selects">
+      <!-- Category combobox -->
+      <Popover v-model:open="catOpen">
+        <PopoverTrigger as-child>
+          <button
+            class="filter-select combobox-trigger"
+            :class="{ 'has-value': category }"
+            type="button"
+          >
+            <span>{{ category || 'Semua Kategori' }}</span>
+            <ChevronsUpDown :size="12" class="combobox-chevron" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent class="combobox-content" align="start" :side-offset="6">
+          <div class="combobox-search-wrap">
+            <Search :size="13" class="combobox-search-icon" />
+            <input
+              v-model="catSearch"
+              class="combobox-search-input"
+              type="text"
+              placeholder="Cari kategori..."
+              @click.stop
+            />
+          </div>
+          <ul class="combobox-list">
+            <li
+              v-for="opt in filteredCategories"
+              :key="opt.value"
+              class="combobox-item"
+              :class="{ active: category === opt.value }"
+              @click="selectCategory(opt.value)"
+            >
+              <Check v-if="category === opt.value" :size="13" class="combobox-check" />
+              <span :class="category === opt.value ? 'font-semibold' : ''">{{ opt.label }}</span>
+            </li>
+            <li v-if="filteredCategories.length === 0" class="combobox-empty">Tidak ditemukan</li>
+          </ul>
+        </PopoverContent>
+      </Popover>
+      <!-- Sort combobox -->
+      <Popover v-model:open="sortOpen">
+        <PopoverTrigger as-child>
+          <button class="filter-select combobox-trigger" type="button">
+            <span>{{ sortOptions.find(s => s.value === sort)?.label }}</span>
+            <ChevronsUpDown :size="12" class="combobox-chevron" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent class="combobox-content" align="start" :side-offset="6">
+          <ul class="combobox-list" style="padding: 6px;">
+            <li
+              v-for="opt in sortOptions"
+              :key="opt.value"
+              class="combobox-item"
+              :class="{ active: sort === opt.value }"
+              @click="selectSort(opt.value)"
+            >
+              <Check v-if="sort === opt.value" :size="13" class="combobox-check" />
+              <span :class="sort === opt.value ? 'font-semibold' : ''">{{ opt.label }}</span>
+            </li>
+          </ul>
+        </PopoverContent>
+      </Popover>
+      </div>
     </div>
 
     <!-- ACTIVE FILTERS -->
@@ -141,9 +189,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, Package, MapPin } from '@lucide/vue'
+import { Search, Package, MapPin, ChevronsUpDown, Check } from '@lucide/vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import api from '@/services/api'
 
 const router = useRouter()
@@ -157,6 +206,46 @@ const sort       = ref(route.query.sort     || 'terbaru')
 const page       = ref(Number(route.query.page) || 1)
 const lastPage   = ref(1)
 const totalItems = ref(0)
+
+const catOpen   = ref(false)
+const catSearch = ref('')
+const sortOpen  = ref(false)
+
+const sortOptions = [
+  { value: 'terbaru',    label: 'Terbaru' },
+  { value: 'harga_asc',  label: 'Harga: Rendah ke Tinggi' },
+  { value: 'harga_desc', label: 'Harga: Tinggi ke Rendah' },
+]
+
+function selectSort(val) {
+  sort.value = val
+  sortOpen.value = false
+  onFilterChange()
+}
+
+const categories = [
+  { value: '',            label: 'Semua Kategori' },
+  { value: 'Electronics', label: 'Electronics' },
+  { value: 'Fashion',     label: 'Fashion' },
+  { value: 'Beauty',      label: 'Beauty' },
+  { value: 'Home',        label: 'Home' },
+  { value: 'Sports',      label: 'Sports' },
+  { value: 'Food',        label: 'Food' },
+  { value: 'General',     label: 'General' },
+]
+
+const filteredCategories = computed(() =>
+  catSearch.value
+    ? categories.filter(c => c.label.toLowerCase().includes(catSearch.value.toLowerCase()))
+    : categories
+)
+
+function selectCategory(val) {
+  category.value = val
+  catOpen.value = false
+  catSearch.value = ''
+  onFilterChange()
+}
 
 let debounceTimer = null
 function debouncedFetch() {
@@ -209,19 +298,28 @@ onMounted(fetchProducts)
 
 <style scoped>
 /* ── LAYOUT ── */
-.page-products { max-width: 1200px; margin: 0 auto; padding: 36px 24px; background: #fdf2f5; min-height: 100vh; }
+.page-products { max-width: 1200px; margin: 0 auto; padding: 24px 16px; background: #fdf2f5; min-height: 100vh; }
+@media (min-width: 640px) { .page-products { padding: 36px 24px; } }
 
 /* PAGE HEAD */
-.page-head { margin-bottom: 28px; }
-.page-head-top { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-head { margin-bottom: 20px; }
+.page-head-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
 .section-label { display: inline-block; background: #fce7ef; color: #c41952; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 9999px; margin-bottom: 6px; }
-.page-head h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: #1a1a1a; }
-.page-head p  { font-size: 14px; color: #a06070; margin-top: 4px; }
-.result-count { font-size: 13px; color: #a06070; font-weight: 500; }
+.page-head h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.04em; color: #1a1a1a; }
+@media (min-width: 640px) { .page-head h1 { font-size: 26px; } }
+.page-head p  { font-size: 13px; color: #a06070; margin-top: 4px; }
+.result-count { font-size: 12px; color: #a06070; font-weight: 500; white-space: nowrap; margin-top: 4px; }
 
 /* FILTER BAR */
-.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.search-wrap { position: relative; flex: 1; min-width: 240px; }
+.filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.search-wrap { position: relative; flex: 1; min-width: 0; width: 100%; order: 0; }
+@media (max-width: 639px) {
+  .filter-bar { flex-direction: column; }
+  .search-wrap { width: 100%; }
+  .combobox-trigger { flex: 1; width: 100%; }
+  .filter-bar > :not(.search-wrap) { display: flex; flex: 1; }
+}
+@media (min-width: 640px) { .search-wrap { min-width: 240px; width: auto; } }
 .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #c41952; pointer-events: none; display: flex; }
 .search-input {
   width: 100%; height: 42px; padding: 0 14px 0 40px;
@@ -229,6 +327,7 @@ onMounted(fetchProducts)
   border: 1.5px solid #f3e0e6; background: #fff;
   border-radius: 9999px; outline: none;
   transition: border-color .15s, box-shadow .15s;
+  box-sizing: border-box;
 }
 .search-input:focus { border-color: #c41952; box-shadow: 0 0 0 3px rgba(196,25,82,.1); }
 .filter-select {
@@ -237,12 +336,54 @@ onMounted(fetchProducts)
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c41952' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center;
   border: 1.5px solid #f3e0e6; border-radius: 9999px;
   outline: none; appearance: none; cursor: pointer;
-  transition: border-color .15s;
+  transition: border-color .15s; flex: 1;
 }
+@media (min-width: 640px) { .filter-select { flex: none; } }
 .filter-select:focus { border-color: #c41952; }
 
+/* COMBOBOX */
+.combobox-trigger {
+  display: inline-flex; align-items: center; justify-content: space-between;
+  gap: 8px; min-width: 160px; background: #fff;
+  background-image: none !important; white-space: nowrap;
+  padding: 0 14px;
+}
+.combobox-trigger.has-value { border-color: #c41952; color: #c41952; }
+.combobox-chevron { color: #c41952; shrink: 0; flex-shrink: 0; }
+.combobox-content {
+  width: 200px; padding: 0; border: 1.5px solid #f3e0e6;
+  border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.10);
+  overflow: hidden; background: #fff;
+}
+.combobox-search-wrap {
+  position: relative; padding: 10px 10px 8px;
+  border-bottom: 1px solid #f3e0e6;
+}
+.combobox-search-icon {
+  position: absolute; left: 22px; top: 50%; transform: translateY(-50%);
+  color: #a06070; pointer-events: none;
+}
+.combobox-search-input {
+  width: 100%; height: 34px; padding: 0 10px 0 30px;
+  font-size: 13px; font-family: inherit; color: #1a1a1a;
+  border: 1.5px solid #f3e0e6; border-radius: 9999px;
+  outline: none; background: #fdf2f5; box-sizing: border-box;
+  transition: border-color .15s;
+}
+.combobox-search-input:focus { border-color: #c41952; }
+.combobox-list { list-style: none; margin: 0; padding: 6px; max-height: 240px; overflow-y: auto; }
+.combobox-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 9px; font-size: 13px;
+  color: #1a1a1a; cursor: pointer; transition: background .12s;
+}
+.combobox-item:hover { background: #fdf2f5; }
+.combobox-item.active { background: #fce7ef; color: #c41952; }
+.combobox-check { color: #c41952; flex-shrink: 0; }
+.combobox-empty { padding: 10px; text-align: center; font-size: 12px; color: #a06070; }
+
 /* ACTIVE FILTERS */
-.active-filters { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.active-filters { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .filter-label-text { font-size: 12px; color: #a06070; font-weight: 500; }
 .filter-chip {
   display: inline-flex; align-items: center; gap: 5px;
@@ -253,7 +394,15 @@ onMounted(fetchProducts)
 .filter-chip button:hover { opacity: 1; }
 
 /* PRODUCTS GRID */
-.products-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (min-width: 480px)  { .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
+@media (min-width: 640px)  { .products-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
+@media (min-width: 900px)  { .products-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+@media (min-width: 1100px) { .products-grid { grid-template-columns: repeat(5, 1fr); gap: 16px; } }
 
 .product-card {
   background: #fff; border: 1.5px solid #f3e0e6; border-radius: 16px;
@@ -276,54 +425,63 @@ onMounted(fetchProducts)
 
 /* BADGE */
 .product-badge {
-  position: absolute; top: 10px; left: 10px;
-  font-size: 10px; font-weight: 800; letter-spacing: .06em;
-  padding: 3px 8px; border-radius: 9999px;
+  position: absolute; top: 8px; left: 8px;
+  font-size: 9px; font-weight: 800; letter-spacing: .06em;
+  padding: 2px 7px; border-radius: 9999px;
   background: #c41952; color: #fff;
 }
+@media (min-width: 640px) { .product-badge { font-size: 10px; top: 10px; left: 10px; padding: 3px 8px; } }
 .product-badge.new { background: #0ea5e9; }
 .product-badge.hot { background: #f59e0b; }
 
 /* BODY */
-.product-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+.product-body { padding: 10px; flex: 1; display: flex; flex-direction: column; }
+@media (min-width: 640px) { .product-body { padding: 12px; } }
 
-.product-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.product-store { font-size: 11px; color: #c41952; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
-.product-location { font-size: 10px; color: #a06070; display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+.product-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.product-store { font-size: 10px; color: #c41952; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+@media (min-width: 640px) { .product-store { font-size: 11px; } }
+.product-location { font-size: 9px; color: #a06070; display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+@media (min-width: 640px) { .product-location { font-size: 10px; } }
 
 .product-name {
-  font-size: 13px; font-weight: 700; color: #1a1a1a; line-height: 1.4;
-  margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2;
+  font-size: 12px; font-weight: 700; color: #1a1a1a; line-height: 1.4;
+  margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
 }
+@media (min-width: 640px) { .product-name { font-size: 13px; margin-bottom: 6px; } }
 
-.product-rating { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
-.stars       { color: #f59e0b; font-size: 11px; letter-spacing: 1px; }
-.stars-empty { color: #f3e0e6; font-size: 11px; letter-spacing: 1px; }
-.rating-count { font-size: 11px; color: #a06070; font-weight: 500; }
+.product-rating { display: flex; align-items: center; gap: 3px; margin-bottom: 6px; }
+.stars       { color: #f59e0b; font-size: 10px; letter-spacing: 1px; }
+.stars-empty { color: #f3e0e6; font-size: 10px; letter-spacing: 1px; }
+.rating-count { font-size: 10px; color: #a06070; font-weight: 500; }
+@media (min-width: 640px) { .stars, .stars-empty, .rating-count { font-size: 11px; } }
 
 .product-footer { margin-top: auto; }
-.product-price { font-size: 14px; font-weight: 800; color: #c41952; }
-.product-price-orig { font-size: 11px; color: #a06070; text-decoration: line-through; margin-top: 1px; }
+.product-price { font-size: 13px; font-weight: 800; color: #c41952; }
+@media (min-width: 640px) { .product-price { font-size: 14px; } }
+.product-price-orig { font-size: 10px; color: #a06070; text-decoration: line-through; margin-top: 1px; }
 
 /* BUTTONS */
 .view-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 34px; margin-top: 8px; border-radius: 9999px;
+  width: 100%; height: 36px; margin-top: 8px; border-radius: 9999px;
   border: none; background: #c41952; color: #fff;
-  font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+  font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
   box-shadow: 0 4px 12px rgba(196,25,82,.25);
   transition: background .15s;
 }
+@media (min-width: 640px) { .view-btn { height: 34px; font-size: 12px; } }
 .view-btn:hover { background: #a0163f; }
 
 .notify-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; height: 34px; margin-top: 8px; border-radius: 9999px;
+  width: 100%; height: 36px; margin-top: 8px; border-radius: 9999px;
   border: 1.5px solid #f3c6d4; background: #fff; color: #c41952;
-  font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+  font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
   transition: background .15s, border-color .15s;
 }
+@media (min-width: 640px) { .notify-btn { height: 34px; font-size: 12px; } }
 .notify-btn:hover { background: #fce7ef; border-color: #c41952; }
 
 /* SKELETON */
@@ -332,18 +490,19 @@ onMounted(fetchProducts)
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
 /* EMPTY */
-.empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 64px 24px; color: #a06070; text-align: center; }
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 24px; color: #a06070; text-align: center; }
 .empty-state p { font-size: 15px; }
 .reset-btn { font-size: 13px; color: #c41952; background: none; border: none; cursor: pointer; font-family: inherit; text-decoration: underline; }
 
 /* PAGINATION */
-.pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 40px; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 32px; flex-wrap: wrap; }
 .page-btn {
-  height: 38px; padding: 0 18px; border-radius: 9999px;
-  font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;
+  height: 38px; padding: 0 14px; border-radius: 9999px;
+  font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
   border: 1.5px solid #f3e0e6; background: #fff; color: #c41952;
   transition: all .15s;
 }
+@media (min-width: 640px) { .page-btn { padding: 0 18px; font-size: 13px; } }
 .page-btn:hover:not(:disabled) { background: #fce7ef; border-color: #f3c6d4; }
 .page-btn:disabled { opacity: .35; cursor: not-allowed; }
 .page-dots { display: flex; gap: 6px; align-items: center; }
