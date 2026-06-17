@@ -1,132 +1,235 @@
 <template>
-  <div>
-    <div class="flex items-center justify-between mb-6">
+  <div class="max-w-[760px] mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-start justify-between gap-4 mb-5">
       <div>
-        <h1 class="text-2xl font-bold">Alamat Pengiriman</h1>
-        <p class="text-muted-foreground text-sm mt-1">Kelola alamat pengiriman kamu</p>
+        <h1 class="text-[22px] font-bold tracking-[-0.03em]">Alamat Pengiriman</h1>
+        <p class="text-[13px] text-muted-foreground mt-0.5">Kelola alamat pengiriman kamu</p>
       </div>
-      <Button @click="openForm()"><Plus class="w-4 h-4 mr-2" />Tambah</Button>
+      <button
+        class="inline-flex items-center gap-1.5 px-4 py-[9px] rounded-[10px] border-0 text-[13px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity cursor-pointer shrink-0 shadow-[0_2px_8px_rgba(99,102,241,.25)]"
+        @click="openForm()"
+      >
+        <Plus class="w-3.5 h-3.5" /> Tambah Alamat
+      </button>
     </div>
 
+    <!-- Count -->
+    <p v-if="!loading" class="text-[13px] text-muted-foreground mb-4">
+      {{ addresses.length }} alamat tersimpan
+    </p>
+
+    <!-- Skeleton -->
     <div v-if="loading" class="space-y-3">
-      <div v-for="i in 2" :key="i" class="h-24 bg-muted rounded-lg animate-pulse" />
+      <div v-for="i in 2" :key="i" class="h-36 bg-muted rounded-xl animate-pulse" />
     </div>
 
-    <div v-else-if="addresses.length === 0" class="text-center py-12 text-muted-foreground">
-      <MapPin class="w-12 h-12 mx-auto mb-3 opacity-30" />
-      <p>Belum ada alamat. Tambah alamat untuk bisa checkout.</p>
+    <!-- Empty -->
+    <div v-else-if="addresses.length === 0" class="flex flex-col items-center gap-3 py-20 text-center bg-card border rounded-xl">
+      <MapPin class="w-12 h-12 text-muted-foreground/25" />
+      <p class="text-[15px] font-medium">Belum ada alamat</p>
+      <p class="text-[13px] text-muted-foreground">Tambah alamat untuk bisa checkout</p>
+      <button
+        class="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] border-0 text-[13px] font-semibold text-white bg-primary hover:opacity-90 cursor-pointer"
+        @click="openForm()"
+      >
+        <Plus class="w-3.5 h-3.5" /> Tambah Alamat
+      </button>
     </div>
 
+    <!-- Address cards -->
     <div v-else class="space-y-3">
-      <Card v-for="addr in addresses" :key="addr.id" :class="addr.is_default ? 'border-primary' : ''">
-        <CardContent class="py-4">
-          <div class="flex items-start justify-between gap-4">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <p class="font-semibold">{{ addr.label }}</p>
-                <Badge v-if="addr.is_default" class="text-xs">Utama</Badge>
-              </div>
-              <p class="text-sm">{{ addr.recipient_name }} · {{ addr.phone }}</p>
-              <p class="text-sm text-muted-foreground">{{ addr.full_address }}, {{ addr.district }}, {{ addr.city }}, {{ addr.province }} {{ addr.postal_code }}</p>
-            </div>
-            <div class="flex flex-col gap-1 shrink-0">
-              <Button variant="outline" size="sm" @click="openForm(addr)">Edit</Button>
-              <Button v-if="!addr.is_default" variant="ghost" size="sm" @click="setDefault(addr)">Jadikan Utama</Button>
-              <Button variant="ghost" size="sm" class="text-destructive hover:text-destructive" @click="confirmDelete(addr)">Hapus</Button>
-            </div>
+      <div
+        v-for="addr in addresses"
+        :key="addr.id"
+        class="bg-card border-[1.5px] rounded-xl p-5 transition-shadow hover:shadow-md"
+        :class="addr.is_default ? 'border-primary' : 'border-border'"
+      >
+        <div class="flex items-start gap-3.5">
+          <!-- icon -->
+          <div
+            class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 mt-0.5"
+            :class="addr.is_default ? 'bg-primary/10' : 'bg-muted'"
+          >
+            <MapPin class="w-[18px] h-[18px]" :class="addr.is_default ? 'text-primary' : 'text-muted-foreground'" />
           </div>
-        </CardContent>
-      </Card>
+
+          <!-- info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+              <span class="text-[14px] font-bold">{{ addr.label }}</span>
+              <span v-if="addr.is_default" class="text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5">Utama</span>
+            </div>
+            <p class="text-[13px] font-medium text-slate-700">{{ addr.recipient_name }}</p>
+            <p class="text-[12px] text-muted-foreground mt-0.5">{{ addr.phone }}</p>
+            <p class="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
+              {{ addr.full_address }}, {{ addr.district }}, {{ addr.city }}, {{ addr.province }} {{ addr.postal_code }}
+            </p>
+          </div>
+        </div>
+
+        <!-- action row -->
+        <div class="flex items-center gap-2 mt-4 pt-4 border-t">
+          <button
+            class="h-8 px-3 rounded-lg border-[1.5px] border-border text-[12px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            @click="openForm(addr)"
+          >
+            <Pencil class="w-3 h-3" /> Edit
+          </button>
+          <button
+            v-if="!addr.is_default"
+            class="h-8 px-3 rounded-lg border-[1.5px] border-border text-[12px] font-medium text-muted-foreground bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
+            @click="setDefault(addr)"
+          >
+            Jadikan Utama
+          </button>
+          <button
+            class="h-8 px-3 rounded-lg border-0 text-[12px] font-medium text-red-500 bg-transparent hover:bg-red-50 transition-colors cursor-pointer ml-auto inline-flex items-center gap-1.5"
+            @click="confirmDelete(addr)"
+          >
+            <Trash2 class="w-3 h-3" /> Hapus
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Form Modal -->
-    <div v-if="showForm" class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
-      <Card class="w-full max-w-lg my-8">
-        <CardContent class="pt-6">
-          <h2 class="font-semibold text-lg mb-4">{{ editingAddr ? 'Edit Alamat' : 'Tambah Alamat' }}</h2>
-          <form @submit.prevent="submitForm" class="space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <Label>Label *</Label>
-                <Input v-model="form.label" placeholder="Rumah / Kantor" required />
-              </div>
-              <div class="space-y-1">
-                <Label>Nama Penerima *</Label>
-                <Input v-model="form.recipient_name" required />
-              </div>
-              <div class="space-y-1">
-                <Label>No. Telepon *</Label>
-                <Input v-model="form.phone" required />
-              </div>
-              <div class="space-y-1">
-                <Label>Kode Pos *</Label>
-                <Input v-model="form.postal_code" required />
-              </div>
-              <div class="col-span-2 space-y-1">
-                <Label>Alamat Lengkap *</Label>
-                <Input v-model="form.full_address" placeholder="Jl. Nama Jalan No. X" required />
-              </div>
-              <div class="space-y-1">
-                <Label>Provinsi *</Label>
-                <Input v-model="form.province" required />
-              </div>
-              <div class="space-y-1">
-                <Label>Kota *</Label>
-                <Input v-model="form.city" required />
-              </div>
-              <div class="space-y-1">
-                <Label>Kecamatan *</Label>
-                <Input v-model="form.district" required />
-              </div>
-              <div class="flex items-center gap-2 pt-4">
-                <input type="checkbox" id="is_default" v-model="form.is_default" class="rounded" />
-                <Label for="is_default">Jadikan alamat utama</Label>
-              </div>
+    <div
+      v-if="showForm"
+      class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto"
+      @click.self="showForm = false"
+    >
+      <div class="bg-card border rounded-xl w-full max-w-[520px] my-8 p-7">
+        <h2 class="font-bold text-[17px] mb-5">{{ editingAddr ? 'Edit Alamat' : 'Tambah Alamat' }}</h2>
+        <form @submit.prevent="submitForm">
+          <div class="grid grid-cols-2 gap-3">
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">Label *</label>
+              <input v-model="form.label" placeholder="Rumah / Kantor" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
             </div>
-            <p v-if="formError" class="text-destructive text-sm">{{ formError }}</p>
-            <div class="flex gap-3 pt-2">
-              <Button type="submit" :disabled="submitting">{{ submitting ? 'Menyimpan...' : 'Simpan' }}</Button>
-              <Button type="button" variant="outline" @click="showForm = false">Batal</Button>
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">Nama Penerima *</label>
+              <input v-model="form.recipient_name" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
             </div>
-          </form>
-        </CardContent>
-      </Card>
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">No. Telepon *</label>
+              <input v-model="form.phone" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">Kode Pos *</label>
+              <input v-model="form.postal_code" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+            </div>
+
+            <div class="col-span-2 space-y-1.5">
+              <label class="text-[12px] font-semibold">Alamat Lengkap *</label>
+              <input v-model="form.full_address" placeholder="Jl. Nama Jalan No. X" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">Provinsi *</label>
+              <input v-model="form.province" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">Kota *</label>
+              <input v-model="form.city" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[12px] font-semibold">Kecamatan *</label>
+              <input v-model="form.district" required
+                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+            </div>
+
+            <div class="col-span-2 flex items-center gap-2 pt-1">
+              <input type="checkbox" id="is_default" v-model="form.is_default" class="w-4 h-4 rounded accent-primary cursor-pointer" />
+              <label for="is_default" class="text-[13px] font-medium cursor-pointer">Jadikan alamat utama</label>
+            </div>
+
+          </div>
+
+          <p v-if="formError" class="text-red-500 text-[12px] mt-3">{{ formError }}</p>
+
+          <div class="flex gap-2.5 mt-5">
+            <button
+              type="submit"
+              :disabled="submitting"
+              class="h-[38px] px-5 rounded-[10px] border-0 text-[13px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+            >
+              {{ submitting ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+            <button
+              type="button"
+              class="h-[38px] px-5 rounded-[10px] border-[1.5px] text-[13px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
+              @click="showForm = false"
+            >
+              Batal
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <!-- Delete confirm -->
-    <div v-if="deletingAddr" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card class="w-full max-w-sm">
-        <CardContent class="pt-6">
-          <h3 class="font-semibold mb-2">Hapus Alamat?</h3>
-          <p class="text-sm text-muted-foreground mb-4">Alamat "<strong>{{ deletingAddr.label }}</strong>" akan dihapus.</p>
-          <div class="flex gap-3">
-            <Button variant="destructive" :disabled="submitting" @click="deleteAddr">Hapus</Button>
-            <Button variant="outline" @click="deletingAddr = null">Batal</Button>
-          </div>
-        </CardContent>
-      </Card>
+    <!-- Delete confirm modal -->
+    <div
+      v-if="deletingAddr"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      @click.self="deletingAddr = null"
+    >
+      <div class="bg-card border rounded-xl w-full max-w-sm p-6">
+        <div class="w-11 h-11 rounded-full bg-red-50 flex items-center justify-center mb-4">
+          <Trash2 class="w-5 h-5 text-red-500" />
+        </div>
+        <h3 class="font-bold text-[16px] mb-1.5">Hapus Alamat?</h3>
+        <p class="text-[13px] text-muted-foreground mb-5">
+          Alamat <strong class="text-foreground">"{{ deletingAddr.label }}"</strong> akan dihapus secara permanen.
+        </p>
+        <div class="flex gap-2.5">
+          <button
+            :disabled="submitting"
+            class="h-[38px] px-5 rounded-[10px] border-0 text-[13px] font-semibold text-white bg-red-600 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+            @click="deleteAddr"
+          >
+            {{ submitting ? 'Menghapus...' : 'Hapus' }}
+          </button>
+          <button
+            class="h-[38px] px-5 rounded-[10px] border-[1.5px] text-[13px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
+            @click="deletingAddr = null"
+          >
+            Batal
+          </button>
+        </div>
+      </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Plus, MapPin } from '@lucide/vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Plus, MapPin, Pencil, Trash2 } from '@lucide/vue'
 import { buyerApi } from '@/services/buyer'
 import { toast } from 'vue-sonner'
 
-const addresses = ref([])
-const loading = ref(true)
-const showForm = ref(false)
+const addresses   = ref([])
+const loading     = ref(true)
+const showForm    = ref(false)
 const editingAddr = ref(null)
 const deletingAddr = ref(null)
-const submitting = ref(false)
-const formError = ref('')
+const submitting  = ref(false)
+const formError   = ref('')
 
 const emptyForm = { label: '', recipient_name: '', phone: '', full_address: '', province: '', city: '', district: '', postal_code: '', is_default: false }
 const form = ref({ ...emptyForm })
@@ -147,8 +250,7 @@ function openForm(addr = null) {
 }
 
 async function submitForm() {
-  submitting.value = true
-  formError.value = ''
+  submitting.value = true; formError.value = ''
   try {
     if (editingAddr.value) {
       await buyerApi.updateAddress(editingAddr.value.id, form.value)
@@ -157,8 +259,7 @@ async function submitForm() {
       await buyerApi.createAddress(form.value)
       toast.success('Alamat ditambahkan!')
     }
-    showForm.value = false
-    load()
+    showForm.value = false; load()
   } catch (e) {
     const errs = e.response?.data?.errors
     formError.value = errs ? Object.values(errs).flat().join(' ') : e.response?.data?.message || 'Gagal menyimpan.'
@@ -178,8 +279,7 @@ async function deleteAddr() {
   try {
     await buyerApi.deleteAddress(deletingAddr.value.id)
     toast.success('Alamat dihapus.')
-    deletingAddr.value = null
-    load()
+    deletingAddr.value = null; load()
   } finally { submitting.value = false }
 }
 

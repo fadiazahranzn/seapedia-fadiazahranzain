@@ -1,157 +1,216 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold">Keranjang</h1>
-      <Button v-if="cart?.items?.length" variant="ghost" size="sm" class="text-destructive" @click="doClear">Kosongkan</Button>
+    <div class="flex items-center justify-between mb-5">
+      <h1 class="text-[22px] font-bold tracking-[-0.03em]">Keranjang</h1>
+      <button
+        v-if="cart?.items?.length"
+        class="text-[12px] font-semibold text-red-600 bg-transparent border-none cursor-pointer px-2.5 py-1.5 rounded-[10px] hover:bg-red-50 transition-colors"
+        @click="doClear"
+      >
+        Kosongkan
+      </button>
     </div>
 
-    <div v-if="loading" class="space-y-3">
-      <div v-for="i in 2" :key="i" class="h-20 bg-muted rounded-lg animate-pulse" />
+    <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+      <div class="space-y-3">
+        <div v-for="i in 2" :key="i" class="h-24 bg-muted rounded-xl animate-pulse" />
+      </div>
+      <div class="h-96 bg-muted rounded-xl animate-pulse" />
     </div>
 
-    <div v-else-if="!cart?.items?.length" class="text-center py-16 text-muted-foreground">
-      <ShoppingCart class="w-14 h-14 mx-auto mb-3 opacity-30" />
-      <p class="font-medium">Keranjang kosong</p>
-      <Button class="mt-4" as-child><RouterLink to="/products">Belanja Sekarang</RouterLink></Button>
+    <div v-else-if="!cart?.items?.length" class="flex flex-col items-center gap-3 py-16 text-center bg-card border rounded-xl">
+      <ShoppingCart class="w-12 h-12 text-slate-300" />
+      <p class="text-[15px] font-medium">Keranjang kosong</p>
+      <small class="text-[13px] text-muted-foreground">Tambahkan produk untuk mulai belanja</small>
+      <button
+        class="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-[13px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity cursor-pointer border-0"
+        @click="router.push('/buyer/products')"
+      >
+        Belanja Sekarang
+      </button>
     </div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Items -->
-      <div class="lg:col-span-2 space-y-3">
-        <Card>
-          <CardContent class="py-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <Store class="w-4 h-4" />
-            <span>Toko: <strong class="text-foreground">{{ cart.store?.name }}</strong></span>
-            <span class="ml-auto text-xs">Keranjang hanya bisa dari 1 toko</span>
-          </CardContent>
-        </Card>
+    <div v-else class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+      <!-- Cart items -->
+      <div class="space-y-3">
+        <!-- Store banner -->
+        <div class="bg-card border rounded-xl px-4 py-3.5 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Store class="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p class="text-[14px] font-semibold">{{ cart.store?.name }}</p>
+          </div>
+          <p class="ml-auto text-[11px] text-muted-foreground">Keranjang hanya bisa dari 1 toko</p>
+        </div>
 
-        <Card v-for="item in cart.items" :key="item.id">
-          <CardContent class="py-4">
-            <div class="flex items-center gap-4">
-              <div class="w-14 h-14 bg-muted rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-                <img v-if="item.product?.image_url" :src="item.product.image_url" :alt="item.product.name" class="w-full h-full object-cover" />
-                <Package v-else class="w-7 h-7 text-muted-foreground/30" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="font-medium text-sm truncate">{{ item.product?.name }}</p>
-                <p class="text-primary font-bold text-sm mt-0.5">{{ formatPrice(item.product?.price) }}</p>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button class="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-muted" @click="updateQty(item, item.quantity - 1)">
-                  <Minus class="w-3 h-3" />
-                </button>
-                <span class="w-8 text-center font-medium text-sm">{{ item.quantity }}</span>
-                <button class="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-muted" @click="updateQty(item, item.quantity + 1)">
-                  <Plus class="w-3 h-3" />
-                </button>
-                <button class="ml-2 text-muted-foreground hover:text-destructive" @click="removeItem(item)">
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
+        <!-- Item cards -->
+        <div v-for="item in cart.items" :key="item.id" class="bg-card border rounded-xl p-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-16 h-16 rounded-[10px] bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+              <img v-if="item.product?.image_url" :src="item.product.image_url" :alt="item.product?.name" class="w-full h-full object-cover" />
+              <Package v-else class="w-7 h-7 text-muted-foreground/30" />
             </div>
-            <div class="mt-2 text-right text-sm font-medium">
-              Subtotal: {{ formatPrice(item.product?.price * item.quantity) }}
+            <div class="flex-1 min-w-0">
+              <p class="text-[14px] font-semibold truncate">{{ item.product?.name }}</p>
+              <p class="text-[13px] font-bold text-primary mt-0.5">{{ formatPrice(item.product?.price) }}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- qty control -->
+              <div class="flex items-center border rounded-[10px] overflow-hidden">
+                <button class="w-[30px] h-[30px] flex items-center justify-center hover:bg-muted text-slate-600 text-base border-0 bg-transparent cursor-pointer transition-colors" @click="updateQty(item, item.quantity - 1)">−</button>
+                <div class="w-9 h-[30px] flex items-center justify-center text-[14px] font-semibold border-x text-foreground">{{ item.quantity }}</div>
+                <button class="w-[30px] h-[30px] flex items-center justify-center hover:bg-muted text-slate-600 text-base border-0 bg-transparent cursor-pointer transition-colors" @click="updateQty(item, item.quantity + 1)">+</button>
+              </div>
+              <button
+                class="w-[30px] h-[30px] flex items-center justify-center rounded-[10px] border-0 bg-transparent text-muted-foreground cursor-pointer hover:text-red-600 hover:bg-red-50 transition-colors"
+                @click="removeItem(item)"
+              >
+                <Trash2 class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          <p class="text-right text-[12px] text-muted-foreground mt-2.5">
+            Subtotal: <strong class="text-foreground">{{ formatPrice(item.product?.price * item.quantity) }}</strong>
+          </p>
+        </div>
       </div>
 
-      <!-- Checkout summary -->
-      <div>
-        <Card class="sticky top-20">
-          <CardContent class="pt-6 space-y-4">
-            <h2 class="font-semibold">Ringkasan Pesanan</h2>
+      <!-- Checkout panel -->
+      <div class="bg-card border rounded-xl p-6 sticky top-[76px]">
+        <h2 class="text-[16px] font-bold mb-5">Ringkasan Pesanan</h2>
 
-            <!-- Delivery Method -->
-            <div class="space-y-2">
-              <Label>Metode Pengiriman</Label>
-              <div class="space-y-2">
-                <label v-for="method in deliveryMethods" :key="method.value"
-                  class="flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors"
-                  :class="selectedMethod === method.value ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground'">
-                  <div class="flex items-center gap-2">
-                    <input type="radio" v-model="selectedMethod" :value="method.value" @change="loadPreview" class="accent-primary" />
-                    <div>
-                      <p class="text-sm font-medium">{{ method.label }}</p>
-                      <p class="text-xs text-muted-foreground">{{ method.desc }}</p>
-                    </div>
-                  </div>
-                  <span class="text-sm font-medium">{{ formatPrice(method.fee) }}</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Voucher -->
-            <div class="space-y-2">
-              <Label>Kode Voucher <span class="text-muted-foreground font-normal">(opsional)</span></Label>
-              <div class="flex gap-2">
-                <Input v-model="voucherCode" placeholder="Contoh: SEAPEDIA10" class="uppercase" @keyup.enter="applyVoucher" />
-                <Button variant="outline" size="sm" @click="applyVoucher" :disabled="applyingVoucher">
-                  {{ appliedVoucher ? 'Hapus' : 'Pakai' }}
-                </Button>
-              </div>
-              <p v-if="voucherError" class="text-destructive text-xs">{{ voucherError }}</p>
-              <p v-if="appliedVoucher" class="text-green-600 text-xs flex items-center gap-1">
-                <CheckCircle class="w-3 h-3" /> Voucher "{{ appliedVoucher.code }}" berhasil dipakai
-              </p>
-            </div>
-
-            <!-- Promo -->
-            <div class="space-y-2">
-              <Label>Kode Promo <span class="text-muted-foreground font-normal">(opsional)</span></Label>
-              <div class="flex gap-2">
-                <Input v-model="promoCode" placeholder="Contoh: FLASHSALE" class="uppercase" @keyup.enter="applyPromo" />
-                <Button variant="outline" size="sm" @click="applyPromo" :disabled="applyingPromo">
-                  {{ appliedPromo ? 'Hapus' : 'Pakai' }}
-                </Button>
-              </div>
-              <p v-if="promoError" class="text-destructive text-xs">{{ promoError }}</p>
-              <p v-if="appliedPromo" class="text-green-600 text-xs flex items-center gap-1">
-                <CheckCircle class="w-3 h-3" /> Promo "{{ appliedPromo.code }}" berhasil dipakai
-              </p>
-            </div>
-
-            <!-- Price breakdown -->
-            <div v-if="preview" class="divide-y text-sm space-y-2">
-              <div class="pb-2 space-y-1">
-                <div class="flex justify-between"><span class="text-muted-foreground">Subtotal</span><span>{{ formatPrice(preview.subtotal) }}</span></div>
-                <div v-if="preview.voucher_discount > 0" class="flex justify-between text-green-600">
-                  <span>Diskon Voucher</span><span>-{{ formatPrice(preview.voucher_discount) }}</span>
+        <!-- Delivery method -->
+        <div class="mb-5">
+          <label class="text-[12px] font-semibold mb-2 block tracking-[0.01em]">Metode Pengiriman</label>
+          <div class="space-y-2">
+            <label
+              v-for="method in deliveryMethods"
+              :key="method.value"
+              class="flex items-center justify-between px-3 py-2.5 rounded-[10px] border-[1.5px] cursor-pointer transition-colors"
+              :class="selectedMethod === method.value ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/40'"
+            >
+              <div class="flex items-center gap-2">
+                <input type="radio" v-model="selectedMethod" :value="method.value" @change="loadPreview" class="accent-primary w-3.5 h-3.5" />
+                <div>
+                  <p class="text-[13px] font-medium">{{ method.label }}</p>
+                  <p class="text-[11px] text-muted-foreground">{{ method.desc }}</p>
                 </div>
-                <div v-if="preview.promo_discount > 0" class="flex justify-between text-green-600">
-                  <span>Diskon Promo</span><span>-{{ formatPrice(preview.promo_discount) }}</span>
-                </div>
-                <div class="flex justify-between"><span class="text-muted-foreground">Ongkir</span><span>{{ formatPrice(preview.delivery_fee) }}</span></div>
-                <div class="flex justify-between text-muted-foreground text-xs">
-                  <span>Dasar PPN</span><span>{{ formatPrice(preview.tax_base) }}</span>
-                </div>
-                <div class="flex justify-between"><span class="text-muted-foreground">PPN 12%</span><span>{{ formatPrice(preview.ppn_amount) }}</span></div>
               </div>
-              <div class="pt-2 flex justify-between font-bold">
-                <span>Total</span><span class="text-primary">{{ formatPrice(preview.total) }}</span>
-              </div>
-            </div>
+              <span class="text-[13px] font-semibold text-slate-600">{{ formatPrice(method.fee) }}</span>
+            </label>
+          </div>
+        </div>
 
-            <!-- Address -->
-            <div class="space-y-2">
-              <Label>Alamat Pengiriman</Label>
-              <select v-model="selectedAddress" class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="">Pilih alamat</option>
-                <option v-for="addr in addresses" :key="addr.id" :value="addr.id">
-                  {{ addr.label }} - {{ addr.city }}
-                </option>
-              </select>
-              <RouterLink to="/buyer/addresses" class="text-xs text-primary hover:underline">+ Tambah alamat baru</RouterLink>
-            </div>
+        <!-- Voucher -->
+        <div class="mb-5">
+          <label class="text-[12px] font-semibold mb-2 block tracking-[0.01em]">
+            Kode Voucher <span class="font-normal text-muted-foreground">(opsional)</span>
+          </label>
+          <div class="flex gap-2">
+            <input
+              v-model="voucherCode"
+              type="text"
+              placeholder="Contoh: SEAPEDIA10"
+              class="flex-1 h-9 px-3 rounded-[10px] border text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 uppercase font-sans bg-background transition-colors"
+              @keyup.enter="applyVoucher"
+            />
+            <button
+              class="h-9 px-3.5 rounded-[10px] border text-[12px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer whitespace-nowrap"
+              @click="applyVoucher"
+              :disabled="applyingVoucher"
+            >
+              {{ appliedVoucher ? 'Hapus' : 'Pakai' }}
+            </button>
+          </div>
+          <p v-if="voucherError" class="flex items-center gap-1 text-[11px] text-red-600 mt-1.5">
+            <X class="w-3 h-3" /> {{ voucherError }}
+          </p>
+          <p v-if="appliedVoucher" class="flex items-center gap-1 text-[11px] text-green-600 mt-1.5">
+            <Check class="w-3 h-3" /> Voucher "{{ appliedVoucher.code }}" berhasil dipakai
+          </p>
+        </div>
 
-            <p v-if="checkoutError" class="text-destructive text-sm">{{ checkoutError }}</p>
+        <!-- Promo -->
+        <div class="mb-5">
+          <label class="text-[12px] font-semibold mb-2 block tracking-[0.01em]">
+            Kode Promo <span class="font-normal text-muted-foreground">(opsional)</span>
+          </label>
+          <div class="flex gap-2">
+            <input
+              v-model="promoCode"
+              type="text"
+              placeholder="Contoh: FLASHSALE"
+              class="flex-1 h-9 px-3 rounded-[10px] border text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 uppercase font-sans bg-background transition-colors"
+              @keyup.enter="applyPromo"
+            />
+            <button
+              class="h-9 px-3.5 rounded-[10px] border text-[12px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer whitespace-nowrap"
+              @click="applyPromo"
+              :disabled="applyingPromo"
+            >
+              {{ appliedPromo ? 'Hapus' : 'Pakai' }}
+            </button>
+          </div>
+          <p v-if="promoError" class="flex items-center gap-1 text-[11px] text-red-600 mt-1.5">
+            <X class="w-3 h-3" /> {{ promoError }}
+          </p>
+          <p v-if="appliedPromo" class="flex items-center gap-1 text-[11px] text-green-600 mt-1.5">
+            <Check class="w-3 h-3" /> Promo "{{ appliedPromo.code }}" berhasil dipakai
+          </p>
+        </div>
 
-            <Button class="w-full" :disabled="!preview || !selectedAddress || checkingOut" @click="doCheckout">
-              {{ checkingOut ? 'Memproses...' : 'Checkout Sekarang' }}
-            </Button>
-          </CardContent>
-        </Card>
+        <!-- Price breakdown -->
+        <div v-if="preview" class="border-y py-3.5 mb-4 space-y-2">
+          <div class="flex justify-between text-[13px]">
+            <span class="text-muted-foreground">Subtotal</span>
+            <span>{{ formatPrice(preview.subtotal) }}</span>
+          </div>
+          <div v-if="(preview.voucher_discount ?? 0) + (preview.promo_discount ?? 0) > 0" class="flex justify-between text-[13px] text-green-600">
+            <span>Diskon</span>
+            <span>−{{ formatPrice((preview.voucher_discount ?? 0) + (preview.promo_discount ?? 0)) }}</span>
+          </div>
+          <div class="flex justify-between text-[13px]">
+            <span class="text-muted-foreground">Ongkir ({{ deliveryMethods.find(m => m.value === selectedMethod)?.label }})</span>
+            <span>{{ formatPrice(preview.delivery_fee) }}</span>
+          </div>
+          <div class="flex justify-between text-[13px]">
+            <span class="text-muted-foreground">PPN 12%</span>
+            <span>{{ formatPrice(preview.ppn_amount) }}</span>
+          </div>
+          <div class="flex justify-between text-[15px] font-bold mt-1 pt-1">
+            <span>Total</span>
+            <span class="text-primary">{{ formatPrice(preview.total) }}</span>
+          </div>
+        </div>
+
+        <!-- Address -->
+        <div class="mb-0">
+          <label class="text-[12px] font-semibold mb-2 block tracking-[0.01em]">Alamat Pengiriman</label>
+          <Select v-model="selectedAddress">
+            <SelectTrigger class="w-full h-9 text-[13px] rounded-[10px]">
+              <SelectValue placeholder="Pilih alamat" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="addr in addresses" :key="addr.id" :value="String(addr.id)">
+                <span class="font-medium">{{ addr.label }}</span>
+                <span class="text-muted-foreground"> — {{ addr.full_address }}, {{ addr.city }}</span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <RouterLink to="/buyer/addresses" class="text-[11px] text-primary hover:underline mt-1 inline-block">+ Tambah alamat baru</RouterLink>
+        </div>
+
+        <p v-if="checkoutError" class="text-[13px] text-red-600 mt-3">{{ checkoutError }}</p>
+
+        <button
+          class="w-full h-11 mt-4 rounded-[10px] border-0 text-[14px] font-bold text-white flex items-center justify-center gap-2 cursor-pointer transition-all bg-gradient-to-br from-primary to-cyan-500 shadow-[0_4px_14px_rgba(99,102,241,0.3)] hover:opacity-90 hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
+          :disabled="!preview || !selectedAddress || checkingOut"
+          @click="doCheckout"
+        >
+          <Check v-if="!checkingOut" class="w-4 h-4" />
+          {{ checkingOut ? 'Memproses...' : 'Checkout Sekarang' }}
+        </button>
       </div>
     </div>
   </div>
@@ -160,11 +219,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ShoppingCart, Store, Package, Plus, Minus, Trash2, CheckCircle } from '@lucide/vue'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
+import { ShoppingCart, Store, Package, Trash2, Check, X } from '@lucide/vue'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { buyerApi } from '@/services/buyer'
 import { toast } from 'vue-sonner'
 
@@ -211,7 +267,7 @@ async function loadAddresses() {
     const { data } = await buyerApi.getAddresses()
     addresses.value = data.data
     const def = data.data.find(a => a.is_default)
-    if (def) selectedAddress.value = def.id
+    if (def) selectedAddress.value = String(def.id)
   } catch {}
 }
 
@@ -229,20 +285,15 @@ async function loadPreview() {
 
 async function applyVoucher() {
   if (appliedVoucher.value) {
-    appliedVoucher.value = null
-    voucherCode.value = ''
-    voucherError.value = ''
-    loadPreview()
-    return
+    appliedVoucher.value = null; voucherCode.value = ''; voucherError.value = ''
+    loadPreview(); return
   }
   if (!voucherCode.value) return
-  applyingVoucher.value = true
-  voucherError.value = ''
+  applyingVoucher.value = true; voucherError.value = ''
   try {
     const { data } = await buyerApi.validateVoucher(voucherCode.value)
     appliedVoucher.value = data.data
-    loadPreview()
-    toast.success('Voucher berhasil dipakai!')
+    loadPreview(); toast.success('Voucher berhasil dipakai!')
   } catch (e) {
     voucherError.value = e.response?.data?.message || 'Voucher tidak valid.'
   } finally { applyingVoucher.value = false }
@@ -250,20 +301,15 @@ async function applyVoucher() {
 
 async function applyPromo() {
   if (appliedPromo.value) {
-    appliedPromo.value = null
-    promoCode.value = ''
-    promoError.value = ''
-    loadPreview()
-    return
+    appliedPromo.value = null; promoCode.value = ''; promoError.value = ''
+    loadPreview(); return
   }
   if (!promoCode.value) return
-  applyingPromo.value = true
-  promoError.value = ''
+  applyingPromo.value = true; promoError.value = ''
   try {
     const { data } = await buyerApi.validatePromo(promoCode.value)
     appliedPromo.value = data.data
-    loadPreview()
-    toast.success('Promo berhasil dipakai!')
+    loadPreview(); toast.success('Promo berhasil dipakai!')
   } catch (e) {
     promoError.value = e.response?.data?.message || 'Promo tidak valid.'
   } finally { applyingPromo.value = false }
@@ -273,11 +319,8 @@ async function updateQty(item, qty) {
   if (qty < 1) { removeItem(item); return }
   try {
     await buyerApi.updateItem(item.id, qty)
-    item.quantity = qty
-    loadPreview()
-  } catch (e) {
-    toast.error(e.response?.data?.message || 'Gagal update.')
-  }
+    item.quantity = qty; loadPreview()
+  } catch (e) { toast.error(e.response?.data?.message || 'Gagal update.') }
 }
 
 async function removeItem(item) {
@@ -293,19 +336,16 @@ async function removeItem(item) {
 async function doClear() {
   await buyerApi.clearCart()
   cart.value.items = []
-  cart.value.store_id = null
-  cart.value.store = null
-  preview.value = null
+  cart.value.store_id = null; cart.value.store = null; preview.value = null
   toast.success('Keranjang dikosongkan.')
 }
 
 async function doCheckout() {
   if (!selectedAddress.value || !selectedMethod.value) return
-  checkingOut.value = true
-  checkoutError.value = ''
+  checkingOut.value = true; checkoutError.value = ''
   try {
     const { data } = await buyerApi.checkout({
-      address_id: selectedAddress.value,
+      address_id: Number(selectedAddress.value),
       delivery_method: selectedMethod.value,
       voucher_code: appliedVoucher.value?.code || undefined,
       promo_code: appliedPromo.value?.code || undefined,
