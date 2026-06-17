@@ -312,14 +312,14 @@ onMounted(fetchProducts)
 
 /* FILTER BAR */
 .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-.search-wrap { position: relative; flex: 1; min-width: 0; width: 100%; order: 0; }
-@media (max-width: 639px) {
-  .filter-bar { flex-direction: column; }
-  .search-wrap { width: 100%; }
-  .combobox-trigger { flex: 1; width: 100%; }
-  .filter-bar > :not(.search-wrap) { display: flex; flex: 1; }
+.search-wrap { position: relative; flex: 1; min-width: 0; width: 100%; }
+.filter-selects { display: flex; gap: 8px; width: 100%; }
+.filter-selects .combobox-trigger { flex: 1; min-width: 0; }
+@media (min-width: 640px) {
+  .search-wrap { min-width: 240px; width: auto; }
+  .filter-selects { width: auto; }
+  .filter-selects .combobox-trigger { flex: none; min-width: 150px; }
 }
-@media (min-width: 640px) { .search-wrap { min-width: 240px; width: auto; } }
 .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #c41952; pointer-events: none; display: flex; }
 .search-input {
   width: 100%; height: 42px; padding: 0 14px 0 40px;
