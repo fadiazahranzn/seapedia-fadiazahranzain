@@ -2,7 +2,7 @@ import api from './api'
 
 export const adminApi = {
   // Dashboard & monitoring
-  getDashboard: () => api.get('/admin/dashboard'),
+  getDashboard: (params = {}) => api.get('/admin/dashboard', { params }),
   getUsers: () => api.get('/admin/users'),
   getStores: () => api.get('/admin/stores'),
   getProducts: () => api.get('/admin/products'),

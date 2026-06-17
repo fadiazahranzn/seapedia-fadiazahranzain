@@ -4,11 +4,25 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Dashboard Admin</h1>
-        <p class="page-sub">Ringkasan aktivitas &amp; metrik SEAPEDIA hari ini</p>
+        <p class="page-sub">{{ periodLabel }}</p>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" @click="loadDashboard">
-          <RefreshCw class="w-3 h-3" /> Refresh
+      <div class="header-actions">
+        <!-- Period filter -->
+        <div class="period-tabs">
+          <button v-for="p in periods" :key="p.value"
+            class="period-tab" :class="{ active: activePeriod === p.value }"
+            @click="setPeriod(p.value)">
+            {{ p.label }}
+          </button>
+        </div>
+        <!-- Custom date range -->
+        <div v-if="activePeriod === 'custom'" class="custom-range">
+          <input type="date" v-model="customFrom" class="date-input" @change="loadDashboard" />
+          <span class="range-sep">–</span>
+          <input type="date" v-model="customTo" class="date-input" @change="loadDashboard" />
+        </div>
+        <button class="btn btn-outline btn-sm" @click="loadDashboard" :disabled="loading">
+          <RefreshCw class="w-3 h-3" :class="{ 'spin': loading }" />
         </button>
         <button class="btn btn-default btn-sm">
           <Download class="w-3 h-3" /> Export
@@ -361,7 +375,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   RefreshCw, Download, Users, ShoppingCart, Store, Truck, Package,
   Tag, Star, AlertTriangle, TrendingUp, TrendingDown, Play, Check
@@ -374,6 +388,48 @@ const loading = ref(true)
 const simulating = ref(false)
 const processing = ref(false)
 const overdueResult = ref(null)
+
+const periods = [
+  { value: 'daily',   label: 'Harian' },
+  { value: 'monthly', label: 'Bulanan' },
+  { value: '3month',  label: '3 Bulan' },
+  { value: 'custom',  label: 'Custom' },
+]
+const activePeriod = ref('daily')
+const customFrom   = ref('')
+const customTo     = ref('')
+
+const periodLabel = computed(() => {
+  const now = new Date()
+  if (activePeriod.value === 'daily')   return `Hari ini, ${now.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}`
+  if (activePeriod.value === 'monthly') return `Bulan ini — ${now.toLocaleDateString('id-ID', { month:'long', year:'numeric' })}`
+  if (activePeriod.value === '3month')  return `3 bulan terakhir`
+  if (customFrom.value && customTo.value)
+    return `${new Date(customFrom.value).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })} – ${new Date(customTo.value).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}`
+  return 'Pilih rentang tanggal'
+})
+
+function setPeriod(val) {
+  activePeriod.value = val
+  if (val !== 'custom') loadDashboard()
+}
+
+function periodParams() {
+  const now = new Date()
+  if (activePeriod.value === 'daily') {
+    const d = now.toISOString().slice(0, 10)
+    return { from: d, to: d }
+  }
+  if (activePeriod.value === 'monthly') {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+    return { from, to: now.toISOString().slice(0, 10) }
+  }
+  if (activePeriod.value === '3month') {
+    const from = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().slice(0, 10)
+    return { from, to: now.toISOString().slice(0, 10) }
+  }
+  return { from: customFrom.value, to: customTo.value }
+}
 
 const userSparkline   = [40, 50, 55, 60, 70, 100]
 const buyerSparkline  = [50, 60, 65, 72, 82, 100]
@@ -422,7 +478,8 @@ function formatPrice(p) {
 async function loadDashboard() {
   loading.value = true
   try {
-    const { data: res } = await adminApi.getDashboard()
+    const params = periodParams()
+    const { data: res } = await adminApi.getDashboard(params)
     data.value = res.data
   } finally { loading.value = false }
 }
@@ -456,9 +513,36 @@ onMounted(loadDashboard)
 
 <style scoped>
 /* ── Page header ── */
-.page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; }
+.page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; gap:16px; flex-wrap:wrap; }
 .page-title  { font-size:22px; font-weight:800; letter-spacing:-.4px; color:#1a1a1a; }
 .page-sub    { font-size:13px; color:#a06070; margin-top:3px; }
+.header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+/* ── Period filter ── */
+.period-tabs {
+  display:flex; background:#fdf2f5; border:1.5px solid #f3e0e6;
+  border-radius:10px; padding:3px; gap:2px;
+}
+.period-tab {
+  padding:6px 14px; font-size:12.5px; font-weight:600; font-family:inherit;
+  border:none; border-radius:7px; background:transparent; color:#a06070;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.period-tab.active { background:#c41952; color:#fff; box-shadow:0 2px 6px rgba(196,25,82,.25); }
+.period-tab:not(.active):hover { background:rgba(196,25,82,.08); color:#c41952; }
+
+/* ── Custom date range ── */
+.custom-range { display:flex; align-items:center; gap:6px; }
+.date-input {
+  height:34px; padding:0 10px; font-size:12.5px; font-family:inherit;
+  border:1.5px solid #f3e0e6; border-radius:8px; background:#fff;
+  color:#1a1a1a; outline:none; transition:border-color .15s;
+}
+.date-input:focus { border-color:#c41952; box-shadow:0 0 0 3px rgba(196,25,82,.08); }
+.range-sep { font-size:13px; color:#a06070; font-weight:600; }
+
+.spin { animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
 
 /* ── Section label ── */
 .section-label {

@@ -1,112 +1,214 @@
 <template>
-  <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold">Manajemen Voucher</h1>
-      <Button @click="showForm = true">+ Buat Voucher</Button>
-    </div>
-
-    <!-- Create form -->
-    <Card v-if="showForm" class="mb-6">
-      <CardContent class="pt-6">
-        <h2 class="font-semibold mb-4">Buat Voucher Baru</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <Label>Kode Voucher</Label>
-            <Input v-model="form.code" placeholder="Contoh: HEMAT20" class="uppercase" />
-          </div>
-          <div class="space-y-1">
-            <Label>Deskripsi</Label>
-            <Input v-model="form.description" placeholder="Deskripsi singkat" />
-          </div>
-          <div class="space-y-1">
-            <Label>Tipe Diskon</Label>
-            <select v-model="form.discount_type" class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background">
-              <option value="percentage">Persentase (%)</option>
-              <option value="fixed">Nominal (Rp)</option>
-            </select>
-          </div>
-          <div class="space-y-1">
-            <Label>Nilai Diskon</Label>
-            <Input v-model="form.discount_value" type="number" min="0" :placeholder="form.discount_type === 'percentage' ? '10 (= 10%)' : '20000'" />
-          </div>
-          <div class="space-y-1">
-            <Label>Min. Pembelian (Rp)</Label>
-            <Input v-model="form.min_purchase" type="number" min="0" placeholder="Opsional" />
-          </div>
-          <div class="space-y-1">
-            <Label>Maks. Diskon (Rp)</Label>
-            <Input v-model="form.max_discount" type="number" min="0" placeholder="Opsional" />
-          </div>
-          <div class="space-y-1">
-            <Label>Batas Penggunaan</Label>
-            <Input v-model="form.usage_limit" type="number" min="1" placeholder="100" />
-          </div>
-          <div class="space-y-1">
-            <Label>Kadaluarsa</Label>
-            <Input v-model="form.expires_at" type="datetime-local" />
+  <div class="page-wrap">
+    <!-- Hero header -->
+    <div class="hero">
+      <div class="hero-content">
+        <div class="hero-left">
+          <div class="hero-icon"><TicketPercent class="w-6 h-6" /></div>
+          <div>
+            <h1 class="hero-title">Manajemen Voucher</h1>
+            <p class="hero-sub">Buat dan kelola voucher diskon untuk pengguna</p>
           </div>
         </div>
-        <p v-if="formError" class="text-destructive text-sm mt-3">{{ formError }}</p>
-        <div class="flex gap-2 mt-4">
-          <Button @click="createVoucher" :disabled="saving">{{ saving ? 'Menyimpan...' : 'Simpan Voucher' }}</Button>
-          <Button variant="outline" @click="resetForm">Batal</Button>
-        </div>
-      </CardContent>
-    </Card>
+        <button class="btn-create" @click="openCreate">
+          <Plus class="w-4 h-4" /> Buat Voucher
+        </button>
+      </div>
 
-    <!-- List -->
-    <div v-if="loading" class="space-y-3">
-      <div v-for="i in 3" :key="i" class="h-20 bg-muted rounded-xl animate-pulse" />
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-icon all"><TicketPercent class="w-4 h-4" /></div>
+          <div>
+            <div class="stat-val">{{ vouchers.length }}</div>
+            <div class="stat-lbl">Total Voucher</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon active"><CircleCheck class="w-4 h-4" /></div>
+          <div>
+            <div class="stat-val green">{{ activeCount }}</div>
+            <div class="stat-lbl">Aktif</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon expired"><Clock class="w-4 h-4" /></div>
+          <div>
+            <div class="stat-val muted">{{ expiredCount }}</div>
+            <div class="stat-lbl">Kadaluarsa</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon used"><Ban class="w-4 h-4" /></div>
+          <div>
+            <div class="stat-val orange">{{ usedUpCount }}</div>
+            <div class="stat-lbl">Habis</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div v-else-if="!vouchers.length" class="text-center py-16 text-muted-foreground">
-      <p>Belum ada voucher. Buat yang pertama!</p>
-    </div>
-    <div v-else class="space-y-3">
-      <Card v-for="v in vouchers" :key="v.id">
-        <CardContent class="py-4">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-mono font-bold text-primary">{{ v.code }}</span>
-                <span :class="isExpired(v) || isUsedUp(v) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
-                  class="text-xs px-2 py-0.5 rounded-full font-medium">
-                  {{ isExpired(v) ? 'Kadaluarsa' : isUsedUp(v) ? 'Habis' : 'Aktif' }}
-                </span>
-              </div>
-              <p class="text-sm text-muted-foreground">{{ v.description }}</p>
-              <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
-                <span>Diskon: <strong class="text-foreground">{{ v.discount_type === 'percentage' ? v.discount_value + '%' : formatPrice(v.discount_value) }}</strong></span>
-                <span v-if="v.min_purchase">Min. beli: {{ formatPrice(v.min_purchase) }}</span>
-                <span v-if="v.max_discount">Maks. diskon: {{ formatPrice(v.max_discount) }}</span>
-                <span>Dipakai: <strong class="text-foreground">{{ v.used_count }}/{{ v.usage_limit }}</strong></span>
-                <span>Kadaluarsa: {{ formatDate(v.expires_at) }}</span>
+
+    <!-- Create / Edit modal -->
+    <div v-if="showForm" class="modal-overlay" @click.self="resetForm">
+      <div class="modal">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-icon"><TicketPercent class="w-4 h-4" /></div>
+            <div>
+              <h2 class="modal-title">{{ editingId ? 'Edit Voucher' : 'Buat Voucher Baru' }}</h2>
+              <p class="modal-sub">Isi detail voucher di bawah ini</p>
+            </div>
+          </div>
+          <button class="modal-close" @click="resetForm"><X class="w-4 h-4" /></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="field">
+              <label>Kode Voucher <span class="req">*</span></label>
+              <input v-model="form.code" placeholder="Contoh: HEMAT20" @input="form.code = form.code.toUpperCase()" style="text-transform:uppercase" />
+            </div>
+            <div class="field">
+              <label>Deskripsi</label>
+              <input v-model="form.description" placeholder="Deskripsi singkat" />
+            </div>
+            <div class="field span-2">
+              <label>Tipe Diskon <span class="req">*</span></label>
+              <div class="type-toggle">
+                <button :class="{ active: form.discount_type === 'percentage' }" @click="form.discount_type = 'percentage'">
+                  <Percent class="w-3.5 h-3.5" /> Persentase
+                </button>
+                <button :class="{ active: form.discount_type === 'fixed' }" @click="form.discount_type = 'fixed'">
+                  <Banknote class="w-3.5 h-3.5" /> Nominal (Rp)
+                </button>
               </div>
             </div>
-            <button class="text-muted-foreground hover:text-destructive shrink-0" @click="deleteVoucher(v)">
-              <Trash2 class="w-4 h-4" />
-            </button>
+            <div class="field">
+              <label>Nilai Diskon <span class="req">*</span></label>
+              <div class="input-adorn">
+                <span class="adorn">{{ form.discount_type === 'percentage' ? '%' : 'Rp' }}</span>
+                <input v-model="form.discount_value" type="number" min="0" :placeholder="form.discount_type === 'percentage' ? '10' : '20000'" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Batas Penggunaan <span class="req">*</span></label>
+              <input v-model="form.usage_limit" type="number" min="1" placeholder="100" />
+            </div>
+            <div class="field">
+              <label>Min. Pembelian</label>
+              <div class="input-adorn">
+                <span class="adorn">Rp</span>
+                <input v-model="form.min_purchase" type="number" min="0" placeholder="Opsional" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Maks. Diskon</label>
+              <div class="input-adorn">
+                <span class="adorn">Rp</span>
+                <input v-model="form.max_discount" type="number" min="0" placeholder="Opsional" />
+              </div>
+            </div>
+            <div class="field span-2">
+              <label>Berlaku Hingga <span class="req">*</span></label>
+              <input v-model="form.expires_at" type="datetime-local" />
+            </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div v-if="formError" class="form-error">
+            <AlertCircle class="w-3.5 h-3.5 shrink-0" /> {{ formError }}
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button class="btn-cancel" @click="resetForm">Batal</button>
+          <button class="btn-save" @click="saveVoucher" :disabled="saving">
+            <Loader2 v-if="saving" class="w-3.5 h-3.5 animate-spin" />
+            {{ saving ? 'Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Buat Voucher' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="voucher-grid">
+      <div v-for="i in 6" :key="i" class="skeleton" />
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="!vouchers.length" class="empty-state">
+      <div class="empty-icon"><Tag class="w-8 h-8" /></div>
+      <p class="empty-title">Belum ada voucher</p>
+      <p class="empty-sub">Buat voucher pertama untuk mulai memberikan diskon kepada pengguna.</p>
+      <button class="btn-create" @click="openCreate"><Plus class="w-4 h-4" /> Buat Voucher</button>
+    </div>
+
+    <!-- Voucher grid -->
+    <div v-else class="voucher-grid">
+      <div v-for="v in vouchers" :key="v.id" class="voucher-card" :class="statusClass(v)">
+
+        <div class="voucher-top">
+          <div class="voucher-code">{{ v.code }}</div>
+          <span class="voucher-badge" :class="statusClass(v)">{{ statusLabel(v) }}</span>
+        </div>
+
+        <div class="voucher-divider">
+          <div class="hole left" /><div class="hole right" />
+        </div>
+
+        <div class="voucher-body">
+          <div class="voucher-discount">
+            {{ v.discount_type === 'percentage' ? v.discount_value + '%' : formatPrice(v.discount_value) }}
+            <span class="voucher-discount-label">{{ v.discount_type === 'percentage' ? 'diskon' : 'potongan' }}</span>
+          </div>
+          <p class="voucher-desc">{{ v.description || '—' }}</p>
+
+          <div class="voucher-meta">
+            <div class="meta-item" v-if="v.min_purchase">
+              <span class="meta-key">Min. beli</span>
+              <span class="meta-val">{{ formatPrice(v.min_purchase) }}</span>
+            </div>
+            <div class="meta-item" v-if="v.max_discount">
+              <span class="meta-key">Maks. diskon</span>
+              <span class="meta-val">{{ formatPrice(v.max_discount) }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-key">Kadaluarsa</span>
+              <span class="meta-val">{{ formatDate(v.expires_at) }}</span>
+            </div>
+          </div>
+
+          <div class="usage-wrap">
+            <div class="usage-labels">
+              <span>Dipakai</span>
+              <span class="usage-count">{{ v.used_count }} / {{ v.usage_limit }}</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill" :style="`width:${Math.min(100, (v.used_count / v.usage_limit) * 100)}%`" :class="isUsedUp(v) ? 'full' : ''" />
+            </div>
+          </div>
+        </div>
+
+        <div class="voucher-actions">
+          <button class="action-btn delete" @click="deleteVoucher(v)" title="Hapus">
+            <Trash2 class="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { Trash2 } from '@lucide/vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { Plus, Trash2, X, Tag, AlertCircle, Loader2, Percent, Banknote, TicketPercent, CircleCheck, Clock, Ban } from '@lucide/vue'
 import { adminApi } from '@/services/admin'
 import { toast } from 'vue-sonner'
 
 const vouchers = ref([])
-const loading = ref(true)
+const loading  = ref(true)
 const showForm = ref(false)
-const saving = ref(false)
+const saving   = ref(false)
 const formError = ref('')
+const editingId = ref(null)
 
 const form = reactive({
   code: '', description: '', discount_type: 'percentage',
@@ -114,47 +216,52 @@ const form = reactive({
   usage_limit: '', expires_at: '',
 })
 
+const activeCount  = computed(() => vouchers.value.filter(v => !isExpired(v) && !isUsedUp(v)).length)
+const expiredCount = computed(() => vouchers.value.filter(v => isExpired(v)).length)
+const usedUpCount  = computed(() => vouchers.value.filter(v => !isExpired(v) && isUsedUp(v)).length)
+
+function isExpired(v) { return new Date(v.expires_at) < new Date() }
+function isUsedUp(v)  { return v.used_count >= v.usage_limit }
+
+function statusLabel(v) {
+  if (isExpired(v)) return 'Kadaluarsa'
+  if (isUsedUp(v))  return 'Habis'
+  return 'Aktif'
+}
+function statusClass(v) {
+  if (isExpired(v)) return 'expired'
+  if (isUsedUp(v))  return 'used-up'
+  return 'active'
+}
+
 function formatPrice(p) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p ?? 0)
 }
 function formatDate(d) {
-  return new Date(d).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
-function isExpired(v) { return new Date(v.expires_at) < new Date() }
-function isUsedUp(v) { return v.used_count >= v.usage_limit }
+
+function openCreate() {
+  editingId.value = null
+  showForm.value = true
+}
 
 function resetForm() {
   showForm.value = false
+  editingId.value = null
   formError.value = ''
   Object.assign(form, { code: '', description: '', discount_type: 'percentage', discount_value: '', min_purchase: '', max_discount: '', usage_limit: '', expires_at: '' })
 }
 
-async function createVoucher() {
+async function saveVoucher() {
   formError.value = ''
-  if (!form.code.trim()) {
-    formError.value = 'Kode voucher wajib diisi.'
-    return
-  }
-  if (!form.discount_value || parseFloat(form.discount_value) <= 0) {
-    formError.value = 'Nilai diskon wajib diisi dan harus lebih dari 0.'
-    return
-  }
-  if (form.discount_type === 'percentage' && parseFloat(form.discount_value) > 100) {
-    formError.value = 'Nilai diskon persentase tidak boleh melebihi 100%.'
-    return
-  }
-  if (!form.usage_limit || parseInt(form.usage_limit) < 1) {
-    formError.value = 'Batas penggunaan minimal 1.'
-    return
-  }
-  if (!form.expires_at) {
-    formError.value = 'Tanggal kadaluarsa wajib diisi.'
-    return
-  }
-  if (new Date(form.expires_at) <= new Date()) {
-    formError.value = 'Tanggal kadaluarsa harus di masa depan.'
-    return
-  }
+  if (!form.code.trim())                                                          { formError.value = 'Kode voucher wajib diisi.'; return }
+  if (!form.discount_value || parseFloat(form.discount_value) <= 0)              { formError.value = 'Nilai diskon harus lebih dari 0.'; return }
+  if (form.discount_type === 'percentage' && parseFloat(form.discount_value) > 100) { formError.value = 'Persentase tidak boleh melebihi 100%.'; return }
+  if (!form.usage_limit || parseInt(form.usage_limit) < 1)                       { formError.value = 'Batas penggunaan minimal 1.'; return }
+  if (!form.expires_at)                                                           { formError.value = 'Tanggal kadaluarsa wajib diisi.'; return }
+  if (new Date(form.expires_at) <= new Date())                                   { formError.value = 'Tanggal kadaluarsa harus di masa depan.'; return }
+
   saving.value = true
   try {
     const payload = {
@@ -193,3 +300,244 @@ onMounted(async () => {
   } finally { loading.value = false }
 })
 </script>
+
+<style scoped>
+/* ── Page ── */
+.page-wrap { display:flex; flex-direction:column; gap:24px; }
+
+/* ── Hero ── */
+.hero {
+  position:relative; overflow:hidden;
+  background:linear-gradient(135deg, #c41952 0%, #e8557a 60%, #f4a0b8 100%);
+  border-radius:16px; padding:28px 28px 0;
+  box-shadow:0 8px 32px rgba(196,25,82,.25);
+}
+.hero-content { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+.hero-left    { display:flex; align-items:center; gap:14px; }
+.hero-icon    {
+  width:44px; height:44px; border-radius:12px;
+  background:rgba(255,255,255,.2); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; color:#fff;
+  border:1px solid rgba(255,255,255,.3);
+}
+.hero-title { font-size:22px; font-weight:800; color:#fff; letter-spacing:-.4px; }
+.hero-sub   { font-size:13px; color:rgba(255,255,255,.75); margin-top:3px; }
+
+/* ── Stat cards ── */
+.stat-cards {
+  display:flex; gap:0;
+  background:rgba(255,255,255,.12); border-radius:12px 12px 0 0;
+  backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.2);
+  border-bottom:none; overflow:hidden;
+}
+.stat-card {
+  flex:1; display:flex; align-items:center; gap:12px;
+  padding:18px 22px; border-right:1px solid rgba(255,255,255,.15);
+}
+.stat-card:last-child { border-right:none; }
+.stat-icon {
+  width:36px; height:36px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.stat-icon.all     { background:rgba(255,255,255,.25); color:#fff; }
+.stat-icon.active  { background:rgba(134,239,172,.3);  color:#bbf7d0; }
+.stat-icon.expired { background:rgba(255,255,255,.15); color:rgba(255,255,255,.7); }
+.stat-icon.used    { background:rgba(253,186,116,.25); color:#fde68a; }
+.stat-val  { font-size:26px; font-weight:800; color:#fff; line-height:1; }
+.stat-val.green  { color:#bbf7d0; }
+.stat-val.muted  { color:rgba(255,255,255,.55); }
+.stat-val.orange { color:#fde68a; }
+.stat-lbl  { font-size:11px; font-weight:600; color:rgba(255,255,255,.65); text-transform:uppercase; letter-spacing:.07em; margin-top:4px; }
+
+/* ── Create button ── */
+.btn-create {
+  display:inline-flex; align-items:center; gap:7px;
+  background:#fff; color:#c41952;
+  font-size:13px; font-weight:700; font-family:inherit;
+  padding:9px 18px; border-radius:10px; border:none;
+  cursor:pointer; transition:all .15s;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+.btn-create:hover { background:#fff0f4; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.15); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(15,10,20,.45);
+  display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:16px; backdrop-filter:blur(2px);
+}
+.modal {
+  background:#fff; border-radius:18px; width:100%; max-width:580px;
+  border:1px solid #f3e0e6;
+  box-shadow:0 30px 80px rgba(196,25,82,.2);
+  overflow:hidden;
+}
+.modal-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 24px; border-bottom:1px solid #f3e0e6;
+  background:linear-gradient(135deg,#fdf2f5,#fff);
+}
+.modal-head-left { display:flex; align-items:center; gap:12px; }
+.modal-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:#c41952; color:#fff;
+  display:flex; align-items:center; justify-content:center;
+}
+.modal-title { font-size:15px; font-weight:800; color:#1a1a1a; }
+.modal-sub   { font-size:12px; color:#a06070; margin-top:2px; }
+.modal-close {
+  width:32px; height:32px; border-radius:8px; border:1px solid #f3e0e6;
+  background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  color:#9ca3af; transition:all .15s;
+}
+.modal-close:hover { background:#fce4ec; color:#c41952; border-color:#f3c6d4; }
+.modal-body { padding:22px 24px; }
+.modal-foot { padding:16px 24px; border-top:1px solid #f3e0e6; display:flex; justify-content:flex-end; gap:8px; }
+
+/* ── Form ── */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.span-2 { grid-column:span 2; }
+.field { display:flex; flex-direction:column; gap:6px; }
+.field label { font-size:12px; font-weight:600; color:#374151; }
+.req { color:#c41952; }
+.field input {
+  width:100%; height:40px; padding:0 12px;
+  font-family:inherit; font-size:13px; color:#1a1a1a;
+  background:#fafafa; border:1.5px solid #f0e0e6; border-radius:9px;
+  outline:none; transition:all .15s; box-sizing:border-box;
+}
+.field input:focus { border-color:#c41952; background:#fff; box-shadow:0 0 0 3px rgba(196,25,82,.08); }
+.field input::placeholder { color:#c4a8b4; }
+
+.type-toggle { display:flex; background:#fdf2f5; border:1.5px solid #f3e0e6; border-radius:10px; padding:4px; gap:4px; }
+.type-toggle button {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:8px 12px; font-size:12.5px; font-weight:600; font-family:inherit;
+  border:none; border-radius:7px; background:transparent; color:#a06070;
+  cursor:pointer; transition:all .15s;
+}
+.type-toggle button.active { background:#c41952; color:#fff; box-shadow:0 2px 8px rgba(196,25,82,.25); }
+
+.input-adorn { position:relative; }
+.adorn {
+  position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  font-size:12px; font-weight:700; color:#a06070; pointer-events:none;
+}
+.input-adorn input { padding-left:32px !important; }
+
+.form-error {
+  display:flex; align-items:center; gap:8px;
+  background:#fff1f2; border:1px solid #fecdd3; border-radius:9px;
+  padding:10px 14px; font-size:12.5px; color:#c41952; margin-top:16px;
+}
+
+.btn-cancel {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:600; font-family:inherit;
+  padding:9px 18px; border-radius:9px;
+  border:1.5px solid #f3e0e6; background:#fff; color:#6b7280;
+  cursor:pointer; transition:all .15s;
+}
+.btn-cancel:hover { border-color:#c41952; color:#c41952; background:#fdf2f5; }
+.btn-save {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:700; font-family:inherit;
+  padding:9px 20px; border-radius:9px;
+  border:none; background:#c41952; color:#fff;
+  cursor:pointer; transition:all .15s;
+  box-shadow:0 2px 8px rgba(196,25,82,.3);
+}
+.btn-save:hover:not(:disabled) { background:#a0133f; transform:translateY(-1px); }
+.btn-save:disabled { opacity:.6; cursor:not-allowed; }
+
+/* ── Loading skeleton ── */
+.skeleton { height:220px; background:linear-gradient(90deg,#fce4ec 25%,#fdf2f5 50%,#fce4ec 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:12px; }
+@keyframes shimmer { to { background-position:-200% 0; } }
+
+/* ── Empty state ── */
+.empty-state { text-align:center; padding:64px 20px; }
+.empty-icon  { width:64px; height:64px; background:#fce4ec; border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#c41952; }
+.empty-title { font-size:16px; font-weight:700; color:#1a1a1a; margin-bottom:6px; }
+.empty-sub   { font-size:13px; color:#a06070; margin-bottom:20px; }
+
+/* ── Voucher grid ── */
+.voucher-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+
+/* ── Voucher card ── */
+.voucher-card {
+  background:#fff; border-radius:12px; overflow:hidden;
+  border:1.5px solid #f3e0e6;
+  box-shadow:0 2px 8px rgba(196,25,82,.06);
+  transition:box-shadow .2s, border-color .2s, transform .15s;
+  position:relative;
+}
+.voucher-card:hover { box-shadow:0 6px 20px rgba(196,25,82,.12); transform:translateY(-2px); border-color:#f3c6d4; }
+.voucher-card.expired { opacity:.65; border-color:#e5e7eb; }
+.voucher-card.used-up { border-color:#fed7aa; }
+
+.voucher-top {
+  background:linear-gradient(135deg, #c41952 0%, #e8557a 100%);
+  padding:16px 16px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.voucher-card.expired .voucher-top { background:linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); }
+.voucher-card.used-up .voucher-top { background:linear-gradient(135deg, #b45309 0%, #d97706 100%); }
+
+.voucher-code {
+  font-family:'Courier New', monospace;
+  font-size:18px; font-weight:800; color:#fff;
+  letter-spacing:.08em;
+}
+.voucher-badge {
+  font-size:10px; font-weight:700; padding:3px 9px; border-radius:99px;
+  border:1.5px solid rgba(255,255,255,.5); color:#fff; letter-spacing:.04em;
+  background:rgba(255,255,255,.2);
+}
+
+/* Ticket perforation line */
+.voucher-divider {
+  height:1px; background: repeating-linear-gradient(90deg, #f3e0e6 0 6px, transparent 6px 10px);
+  position:relative; margin:0;
+}
+.hole {
+  width:16px; height:16px; border-radius:50%;
+  background:#fdf2f5; border:1.5px solid #f3e0e6;
+  position:absolute; top:50%; transform:translateY(-50%);
+}
+.hole.left  { left:-8px; }
+.hole.right { right:-8px; }
+
+.voucher-body { padding:14px 16px 10px; }
+
+.voucher-discount { font-size:28px; font-weight:800; color:#c41952; line-height:1; }
+.voucher-card.expired .voucher-discount { color:#6b7280; }
+.voucher-card.used-up .voucher-discount { color:#b45309; }
+.voucher-discount-label { font-size:12px; font-weight:500; color:#a06070; margin-left:4px; vertical-align:middle; }
+
+.voucher-desc { font-size:12px; color:#a06070; margin-top:4px; }
+
+.voucher-meta { display:flex; flex-direction:column; gap:4px; margin-top:10px; }
+.meta-item   { display:flex; justify-content:space-between; font-size:11.5px; }
+.meta-key    { color:#a06070; }
+.meta-val    { font-weight:600; color:#1a1a1a; }
+
+/* Usage bar */
+.usage-wrap  { margin-top:12px; }
+.usage-labels { display:flex; justify-content:space-between; font-size:11px; color:#a06070; margin-bottom:5px; }
+.usage-count  { font-weight:700; color:#1a1a1a; }
+.usage-bar   { background:#fdf2f5; border-radius:99px; height:5px; overflow:hidden; }
+.usage-fill  { height:100%; background:#c41952; border-radius:99px; transition:width .4s; }
+.usage-fill.full { background:#b45309; }
+
+/* Actions */
+.voucher-actions { padding:8px 16px 14px; display:flex; justify-content:flex-end; gap:6px; }
+.action-btn {
+  width:30px; height:30px; border-radius:7px; border:1px solid #f3e0e6;
+  background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .15s; color:#a06070;
+}
+.action-btn.delete:hover { background:#fff1f2; border-color:#fecdd3; color:#dc2626; }
+
+.animate-spin { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
