@@ -90,36 +90,53 @@
     </div>
 
     <!-- Edit modal -->
-    <div v-if="editingReview" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card class="w-full max-w-md">
-        <CardContent class="pt-6">
-          <h3 class="font-semibold mb-4">Edit Ulasan</h3>
-          <form @submit.prevent="saveEdit" class="space-y-4">
-            <div class="flex gap-1">
-              <button v-for="i in 5" :key="i" type="button" @click="editForm.rating = i" class="p-1">
+    <div v-if="editingReview" class="rev-modal-overlay" @click.self="editingReview = null">
+      <div class="rev-modal">
+        <div class="rev-modal-head">
+          <div class="rev-modal-head-left">
+            <div class="rev-modal-icon"><Star class="w-4 h-4" /></div>
+            <div>
+              <h2 class="rev-modal-title">Edit Ulasan</h2>
+              <p class="rev-modal-sub">Perbarui rating dan komentarmu</p>
+            </div>
+          </div>
+          <button class="rev-modal-close" @click="editingReview = null"><X class="w-4 h-4" /></button>
+        </div>
+
+        <div class="rev-modal-body">
+          <div class="field">
+            <label class="field-label">Rating</label>
+            <div class="star-row">
+              <button v-for="i in 5" :key="i" type="button" @click="editForm.rating = i" class="star-btn">
                 <Star class="w-6 h-6" :class="i <= editForm.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'" />
               </button>
             </div>
+          </div>
+          <div class="field" style="margin-top:14px">
+            <label class="field-label">Komentar <span class="req">*</span></label>
             <textarea
               v-model="editForm.comment"
-              rows="3"
+              rows="4"
               required
-              class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              class="rev-textarea"
             />
-            <div class="flex gap-2">
-              <Button type="submit" :disabled="submitting">Simpan</Button>
-              <Button type="button" variant="outline" @click="editingReview = null">Batal</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+
+        <div class="rev-modal-foot">
+          <button class="btn-cancel" @click="editingReview = null">Batal</button>
+          <button class="btn-save" @click="saveEdit" :disabled="submitting">
+            {{ submitting ? 'Menyimpan...' : 'Simpan Perubahan' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Star } from '@lucide/vue'
+import { Star, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -188,3 +205,65 @@ async function saveEdit() {
 
 onMounted(fetchReviews)
 </script>
+
+<style scoped>
+.rev-modal-overlay {
+  position:fixed; inset:0; background:rgba(15,10,20,.45);
+  display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:16px; backdrop-filter:blur(2px);
+}
+.rev-modal {
+  background:#fff; border-radius:18px; width:100%; max-width:480px;
+  border:1px solid #f3e0e6;
+  box-shadow:0 30px 80px rgba(196,25,82,.2);
+  overflow:hidden;
+}
+.rev-modal-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 24px; border-bottom:1px solid #f3e0e6;
+  background:linear-gradient(135deg,#fdf2f5,#fff);
+}
+.rev-modal-head-left { display:flex; align-items:center; gap:12px; }
+.rev-modal-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:#c41952; color:#fff;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.rev-modal-title { font-size:15px; font-weight:800; color:#1a1a1a; }
+.rev-modal-sub   { font-size:12px; color:#a06070; margin-top:2px; }
+.rev-modal-close {
+  width:32px; height:32px; border-radius:8px; border:1px solid #f3e0e6;
+  background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  color:#9ca3af; transition:all .15s;
+}
+.rev-modal-close:hover { background:#fce4ec; color:#c41952; border-color:#f3c6d4; }
+.rev-modal-body  { padding:22px 24px; }
+.rev-modal-foot  { padding:16px 24px; border-top:1px solid #f3e0e6; display:flex; justify-content:flex-end; gap:8px; }
+
+.field { display:flex; flex-direction:column; gap:6px; }
+.field-label { font-size:12px; font-weight:600; color:#374151; }
+.req { color:#c41952; }
+.star-row { display:flex; gap:2px; }
+.star-btn { padding:2px; background:none; border:none; cursor:pointer; line-height:0; }
+.rev-textarea {
+  width:100%; border-radius:10px; border:1.5px solid #e5e7eb;
+  padding:10px 12px; font-size:13px; outline:none;
+  background:#fff; resize:none; font-family:inherit;
+  transition:border-color .15s, box-shadow .15s;
+}
+.rev-textarea:focus { border-color:#c41952; box-shadow:0 0 0 3px rgba(196,25,82,.08); }
+
+.btn-cancel {
+  height:36px; padding:0 18px; border-radius:9px;
+  border:1.5px solid #e5e7eb; background:#fff; font-size:13px; font-weight:600;
+  color:#6b7280; cursor:pointer; transition:all .15s;
+}
+.btn-cancel:hover { border-color:#c41952; color:#c41952; background:#fdf2f5; }
+.btn-save {
+  height:36px; padding:0 18px; border-radius:9px;
+  border:0; background:#c41952; color:#fff; font-size:13px; font-weight:600;
+  cursor:pointer; transition:opacity .15s;
+}
+.btn-save:hover { opacity:.88; }
+.btn-save:disabled { opacity:.5; cursor:not-allowed; }
+</style>

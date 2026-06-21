@@ -309,6 +309,145 @@
         </div>
       </div>
 
+      <!-- ══ DETAIL MONITORING ══ -->
+      <div class="section-label">Detail Monitoring</div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-head">
+          <div class="card-title">Data Platform</div>
+          <button class="btn btn-outline btn-sm" @click="loadMonitoringTab(activeMonTab)" :disabled="monLoading">
+            <RefreshCw class="w-3 h-3" :class="{ 'spin': monLoading }" />
+          </button>
+        </div>
+        <div class="mon-tabs">
+          <button v-for="t in monTabs" :key="t.key"
+            class="mon-tab" :class="{ active: activeMonTab === t.key }"
+            @click="setMonTab(t.key)">
+            {{ t.label }}
+          </button>
+        </div>
+        <div class="card-body" style="padding-top:8px;">
+          <div v-if="monLoading" class="mon-loading">
+            <div v-for="i in 5" :key="i" class="mon-skel" />
+          </div>
+
+          <!-- Users -->
+          <template v-else-if="activeMonTab === 'users'">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Nama</th><th>Username</th><th>Email</th><th>Role</th><th>Bergabung</th></tr></thead>
+              <tbody>
+                <tr v-for="u in monData.users" :key="u.id">
+                  <td class="mono">#{{ u.id }}</td>
+                  <td class="bold">{{ u.name }}</td>
+                  <td class="mono">{{ u.username }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>
+                    <span v-for="r in u.roles" :key="r.id ?? r"
+                      class="role-badge" :class="`role-${r.role ?? r}`">{{ r.role ?? r }}</span>
+                  </td>
+                  <td class="mono">{{ formatDate(u.created_at) }}</td>
+                </tr>
+                <tr v-if="!monData.users?.length"><td colspan="6" class="empty-row">Tidak ada data.</td></tr>
+              </tbody>
+            </table>
+            <div v-if="monMeta.users" class="mon-meta">{{ monData.users?.length }} dari {{ monMeta.users.total }} user</div>
+          </template>
+
+          <!-- Stores -->
+          <template v-else-if="activeMonTab === 'stores'">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Nama Toko</th><th>Pemilik</th><th>Produk</th><th>Dibuat</th></tr></thead>
+              <tbody>
+                <tr v-for="s in monData.stores" :key="s.id">
+                  <td class="mono">#{{ s.id }}</td>
+                  <td class="bold">{{ s.name }}</td>
+                  <td>{{ s.user?.name }}</td>
+                  <td class="mono">{{ s.products_count }}</td>
+                  <td class="mono">{{ formatDate(s.created_at) }}</td>
+                </tr>
+                <tr v-if="!monData.stores?.length"><td colspan="5" class="empty-row">Tidak ada data.</td></tr>
+              </tbody>
+            </table>
+            <div v-if="monMeta.stores" class="mon-meta">{{ monData.stores?.length }} dari {{ monMeta.stores.total }} toko</div>
+          </template>
+
+          <!-- Products -->
+          <template v-else-if="activeMonTab === 'products'">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Nama Produk</th><th>Toko</th><th>Harga</th><th>Stok</th></tr></thead>
+              <tbody>
+                <tr v-for="p in monData.products" :key="p.id">
+                  <td class="mono">#{{ p.id }}</td>
+                  <td class="bold">{{ p.name }}</td>
+                  <td>{{ p.store?.name }}</td>
+                  <td class="mono">{{ formatPrice(p.price) }}</td>
+                  <td class="mono" :class="p.stock === 0 ? 'text-[#dc2626]' : ''">{{ p.stock }}</td>
+                </tr>
+                <tr v-if="!monData.products?.length"><td colspan="5" class="empty-row">Tidak ada data.</td></tr>
+              </tbody>
+            </table>
+            <div v-if="monMeta.products" class="mon-meta">{{ monData.products?.length }} dari {{ monMeta.products.total }} produk</div>
+          </template>
+
+          <!-- Orders -->
+          <template v-else-if="activeMonTab === 'orders'">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Pembeli</th><th>Toko</th><th>Total</th><th>Status</th><th>Tanggal</th></tr></thead>
+              <tbody>
+                <tr v-for="o in monData.orders" :key="o.id">
+                  <td class="mono">#{{ o.id }}</td>
+                  <td>{{ o.user?.name }}</td>
+                  <td>{{ o.store?.name }}</td>
+                  <td class="mono">{{ formatPrice(o.total) }}</td>
+                  <td><span class="inline-badge" :class="statusBadgeClass(o.status)">{{ statusLabel(o.status) }}</span></td>
+                  <td class="mono">{{ formatDate(o.created_at) }}</td>
+                </tr>
+                <tr v-if="!monData.orders?.length"><td colspan="6" class="empty-row">Tidak ada data.</td></tr>
+              </tbody>
+            </table>
+            <div v-if="monMeta.orders" class="mon-meta">{{ monData.orders?.length }} dari {{ monMeta.orders.total }} pesanan</div>
+          </template>
+
+          <!-- Deliveries -->
+          <template v-else-if="activeMonTab === 'deliveries'">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Order</th><th>Driver</th><th>Metode</th><th>Status</th><th>Diambil</th><th>Selesai</th></tr></thead>
+              <tbody>
+                <tr v-for="d in monData.deliveries" :key="d.id">
+                  <td class="mono">#{{ d.id }}</td>
+                  <td class="mono">#{{ d.order_id }}</td>
+                  <td>{{ d.driver?.name ?? '—' }}</td>
+                  <td class="mono">{{ d.order?.delivery_method ?? '—' }}</td>
+                  <td><span class="inline-badge" :class="d.status === 'completed' ? 'success' : d.status === 'taken' ? 'warning' : 'outline'">{{ d.status }}</span></td>
+                  <td class="mono">{{ d.picked_up_at ? formatDate(d.picked_up_at) : '—' }}</td>
+                  <td class="mono">{{ d.delivered_at ? formatDate(d.delivered_at) : '—' }}</td>
+                </tr>
+                <tr v-if="!monData.deliveries?.length"><td colspan="7" class="empty-row">Tidak ada data.</td></tr>
+              </tbody>
+            </table>
+            <div v-if="monMeta.deliveries" class="mon-meta">{{ monData.deliveries?.length }} dari {{ monMeta.deliveries.total }} pengiriman</div>
+          </template>
+
+          <!-- Overdue -->
+          <template v-else-if="activeMonTab === 'overdue'">
+            <table class="tbl">
+              <thead><tr><th>Order ID</th><th>User ID</th><th>Metode</th><th>Status</th><th>Dibuat</th></tr></thead>
+              <tbody>
+                <tr v-for="o in monData.overdue" :key="o.id">
+                  <td class="mono">#{{ o.id }}</td>
+                  <td class="mono">{{ o.user_id }}</td>
+                  <td class="mono">{{ o.delivery_method }}</td>
+                  <td><span class="inline-badge" style="background:#fff1f2;color:#dc2626;border-color:#fecdd3;">{{ statusLabel(o.status) }}</span></td>
+                  <td class="mono">{{ formatDate(o.created_at) }}</td>
+                </tr>
+                <tr v-if="!monData.overdue?.length">
+                  <td colspan="5" class="empty-row" style="color:#15803d;">Tidak ada pesanan overdue.</td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+        </div>
+      </div>
+
       <!-- ══ OVERDUE ══ -->
       <div class="section-label">Overdue Handling</div>
       <div class="card">
@@ -388,6 +527,51 @@ const loading = ref(true)
 const simulating = ref(false)
 const processing = ref(false)
 const overdueResult = ref(null)
+
+// ── Detail monitoring tabs ──
+const monTabs = [
+  { key: 'users',      label: 'Users' },
+  { key: 'stores',     label: 'Toko' },
+  { key: 'products',   label: 'Produk' },
+  { key: 'orders',     label: 'Pesanan' },
+  { key: 'deliveries', label: 'Pengiriman' },
+  { key: 'overdue',    label: 'Overdue' },
+]
+const activeMonTab = ref('users')
+const monLoading   = ref(false)
+const monData      = ref({ users: [], stores: [], products: [], orders: [], deliveries: [], overdue: [] })
+const monMeta      = ref({})
+
+async function loadMonitoringTab(tab) {
+  monLoading.value = true
+  try {
+    const apiMap = {
+      users:      adminApi.getUsers,
+      stores:     adminApi.getStores,
+      products:   adminApi.getProducts,
+      orders:     adminApi.getOrders,
+      deliveries: adminApi.getDeliveries,
+      overdue:    adminApi.getOverdueOrders,
+    }
+    const { data: res } = await apiMap[tab]()
+    if (tab === 'overdue') {
+      monData.value[tab] = res.data ?? []
+    } else {
+      // Laravel paginate() returns { data: [], total, current_page, ... }
+      monData.value[tab] = res.data ?? []
+      if (res.total !== undefined) monMeta.value[tab] = { total: res.total }
+    }
+  } catch {
+    toast.error('Gagal memuat data monitoring.')
+  } finally {
+    monLoading.value = false
+  }
+}
+
+function setMonTab(tab) {
+  activeMonTab.value = tab
+  if (!monData.value[tab]?.length) loadMonitoringTab(tab)
+}
 
 const periods = [
   { value: 'daily',   label: 'Harian' },
@@ -471,8 +655,28 @@ function pct(key) {
 
 const topVouchers = computed(() => data.value.vouchers?.list?.slice(0, 3) ?? [])
 
+function formatDate(d) {
+  return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 function formatPrice(p) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p ?? 0)
+}
+
+function statusLabel(s) {
+  const map = {
+    sedang_dikemas: 'Dikemas', menunggu_pengirim: 'Menunggu Kurir',
+    sedang_dikirim: 'Dikirim', pesanan_selesai: 'Selesai', dikembalikan: 'Dikembalikan',
+  }
+  return map[s] ?? s
+}
+
+function statusBadgeClass(s) {
+  const map = {
+    pesanan_selesai: 'success', sedang_dikemas: 'warning',
+    menunggu_pengirim: 'info', sedang_dikirim: 'info', dikembalikan: 'crimson',
+  }
+  return map[s] ?? 'outline'
 }
 
 async function loadDashboard() {
@@ -508,7 +712,10 @@ async function processOverdue() {
   } finally { processing.value = false }
 }
 
-onMounted(loadDashboard)
+onMounted(() => {
+  loadDashboard()
+  loadMonitoringTab('users')
+})
 </script>
 
 <style scoped>
@@ -662,6 +869,44 @@ onMounted(loadDashboard)
 .result-check   { width:20px; height:20px; background:#15803d; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .result-amount  { margin-left:auto; font-size:13px; font-weight:700; color:#15803d; }
 .result-more    { text-align:center; font-size:12px; color:#a06070; padding:10px; border-top:1px solid #d1fae5; }
+
+/* ── Monitoring tabs ── */
+.mon-tabs {
+  display:flex; gap:2px; padding:0 20px; border-bottom:1px solid #f3e0e6;
+  overflow-x:auto; scrollbar-width:none;
+}
+.mon-tabs::-webkit-scrollbar { display:none; }
+.mon-tab {
+  padding:10px 16px; font-size:12.5px; font-weight:600; font-family:inherit;
+  border:none; background:transparent; color:#a06070; cursor:pointer;
+  border-bottom:2px solid transparent; transition:all .15s; white-space:nowrap;
+}
+.mon-tab.active { color:#c41952; border-bottom-color:#c41952; }
+.mon-tab:not(.active):hover { color:#c41952; background:#fdf2f5; border-radius:6px 6px 0 0; }
+
+/* ── Monitoring loading ── */
+.mon-loading { display:flex; flex-direction:column; gap:8px; padding:8px 0; }
+.mon-skel { height:36px; background:#fdf2f5; border-radius:6px; animation:pulse 1.4s infinite; }
+
+/* ── Mon pagination meta ── */
+.mon-meta { font-size:11.5px; color:#a06070; padding:10px 14px; border-top:1px solid #fdf0f3; text-align:right; }
+
+/* ── Empty row ── */
+.empty-row { text-align:center; color:#a06070; padding:24px; font-size:13px; }
+
+/* ── Role badges ── */
+.role-badge {
+  font-size:10px; font-weight:600; padding:1px 7px; border-radius:99px;
+  border:1px solid transparent; margin-right:3px; display:inline-block;
+}
+.role-buyer  { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.role-seller { background:#fffbeb; color:#b45309; border-color:#fed7aa; }
+.role-driver { background:#f5f3ff; color:#7c3aed; border-color:#ddd6fe; }
+.role-admin  { background:#fce4ec; color:#c41952; border-color:#f3c6d4; }
+
+/* ── Inline badge extra ── */
+.inline-badge.info   { background:#f0f9ff; color:#0369a1; border-color:#bae6fd; }
+.inline-badge.crimson { background:#fce4ec; color:#c41952; border-color:#f3c6d4; }
 
 /* ── Buttons ── */
 .btn {

@@ -46,20 +46,6 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="role">Masuk sebagai</label>
-          <div class="select-wrap">
-            <select id="role" v-model="form.role" required>
-              <option value="">Pilih role</option>
-              <option value="admin">Admin</option>
-              <option value="buyer">Buyer</option>
-              <option value="seller">Seller</option>
-              <option value="driver">Driver</option>
-            </select>
-            <ChevronDown :size="14" class="select-icon" />
-          </div>
-        </div>
-
         <div v-if="error" class="error-box">
           <AlertCircle :size="14" />
           {{ error }}
@@ -83,13 +69,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Eye, EyeOff, AlertCircle, ChevronDown } from '@lucide/vue'
+import { Eye, EyeOff, AlertCircle } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 
-const form = ref({ login: '', password: '', role: '' })
+const form = ref({ login: '', password: '' })
 const error = ref('')
 const loading = ref(false)
 const showPw = ref(false)
@@ -100,7 +86,8 @@ async function handleLogin() {
   try {
     await auth.login(form.value)
     toast.success('Login berhasil!')
-    router.push(`/${auth.activeRole}`)
+    // If active role set (single-role user), go to dashboard; else pick role
+    router.push(auth.activeRole ? `/${auth.activeRole}` : '/select-role')
   } catch (e) {
     error.value = e.response?.data?.message || 'Login gagal.'
   } finally {

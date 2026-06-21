@@ -55,7 +55,6 @@ class AuthController extends Controller
         $data = $request->validate([
             'login'    => 'required|string',
             'password' => 'required|string',
-            'role'     => 'required|in:admin,buyer,seller,driver',
         ]);
 
         $user = User::where('email', $data['login'])
@@ -66,16 +65,17 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['login' => 'Kredensial tidak valid.']);
         }
 
-        if (! $user->hasRole($data['role'])) {
-            throw ValidationException::withMessages(['role' => 'Akun tidak memiliki role ini.']);
-        }
+        $user->load('roles');
+        $roles = $user->roles->pluck('role')->values()->toArray();
 
-        $token = JWTAuth::claims(['active_role' => $data['role']])->fromUser($user);
+        // Issue token without active_role so user must pick one
+        $token = JWTAuth::claims(['active_role' => null])->fromUser($user);
 
         return response()->json([
-            'user'        => $user->load('roles'),
+            'user'        => $user,
             'token'       => $token,
-            'active_role' => $data['role'],
+            'active_role' => null,
+            'roles'       => $roles,
         ]);
     }
 

@@ -15,5 +15,6 @@ export const sellerApi = {
   // Orders
   getOrders: () => api.get('/seller/orders'),
   processOrder: (id) => api.patch(`/seller/orders/${id}/process`),
+  getTracking: (id) => api.get(`/seller/orders/${id}/tracking`),
   getReport: () => api.get('/seller/report'),
 }

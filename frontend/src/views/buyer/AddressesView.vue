@@ -95,120 +95,107 @@
     </div>
 
     <!-- Form Modal -->
-    <div
-      v-if="showForm"
-      class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto"
-      @click.self="showForm = false"
-    >
-      <div class="bg-card border rounded-xl w-full max-w-[520px] my-8 p-7">
-        <h2 class="font-bold text-[17px] mb-5">{{ editingAddr ? 'Edit Alamat' : 'Tambah Alamat' }}</h2>
-        <form @submit.prevent="submitForm">
-          <div class="grid grid-cols-2 gap-3">
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">Label *</label>
-              <input v-model="form.label" placeholder="Rumah / Kantor" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
+    <div v-if="showForm" class="addr-modal-overlay" @click.self="showForm = false">
+      <div class="addr-modal">
+        <div class="addr-modal-head">
+          <div class="addr-modal-head-left">
+            <div class="addr-modal-icon"><MapPin class="w-4 h-4" /></div>
+            <div>
+              <h2 class="addr-modal-title">{{ editingAddr ? 'Edit Alamat' : 'Tambah Alamat' }}</h2>
+              <p class="addr-modal-sub">Isi detail alamat pengiriman di bawah ini</p>
             </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">Nama Penerima *</label>
-              <input v-model="form.recipient_name" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">No. Telepon *</label>
-              <input v-model="form.phone" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">Kode Pos *</label>
-              <input v-model="form.postal_code" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="col-span-2 space-y-1.5">
-              <label class="text-[12px] font-semibold">Alamat Lengkap *</label>
-              <input v-model="form.full_address" placeholder="Jl. Nama Jalan No. X" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">Provinsi *</label>
-              <input v-model="form.province" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">Kota *</label>
-              <input v-model="form.city" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[12px] font-semibold">Kecamatan *</label>
-              <input v-model="form.district" required
-                class="w-full h-[38px] px-3 rounded-[10px] border-[1.5px] text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-background font-sans transition-all" />
-            </div>
-
-            <div class="col-span-2 flex items-center gap-2 pt-1">
-              <input type="checkbox" id="is_default" v-model="form.is_default" class="w-4 h-4 rounded accent-primary cursor-pointer" />
-              <label for="is_default" class="text-[13px] font-medium cursor-pointer">Jadikan alamat utama</label>
-            </div>
-
           </div>
+          <button class="addr-modal-close" @click="showForm = false"><X class="w-4 h-4" /></button>
+        </div>
 
-          <p v-if="formError" class="text-red-500 text-[12px] mt-3">{{ formError }}</p>
+        <div class="addr-modal-body">
+          <form @submit.prevent="submitForm">
+            <div class="form-grid">
 
-          <div class="flex gap-2.5 mt-5">
-            <button
-              type="submit"
-              :disabled="submitting"
-              class="h-[38px] px-5 rounded-[10px] border-0 text-[13px] font-semibold text-white bg-primary hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
-            >
-              {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-            </button>
-            <button
-              type="button"
-              class="h-[38px] px-5 rounded-[10px] border-[1.5px] text-[13px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
-              @click="showForm = false"
-            >
-              Batal
-            </button>
-          </div>
-        </form>
+              <div class="field">
+                <label>Label <span class="req">*</span></label>
+                <input v-model="form.label" placeholder="Rumah / Kantor" required />
+              </div>
+
+              <div class="field">
+                <label>Nama Penerima <span class="req">*</span></label>
+                <input v-model="form.recipient_name" required />
+              </div>
+
+              <div class="field">
+                <label>No. Telepon <span class="req">*</span></label>
+                <input v-model="form.phone" required />
+              </div>
+
+              <div class="field">
+                <label>Kode Pos <span class="req">*</span></label>
+                <input v-model="form.postal_code" required />
+              </div>
+
+              <div class="field span-2">
+                <label>Alamat Lengkap <span class="req">*</span></label>
+                <input v-model="form.full_address" placeholder="Jl. Nama Jalan No. X" required />
+              </div>
+
+              <div class="field">
+                <label>Provinsi <span class="req">*</span></label>
+                <input v-model="form.province" required />
+              </div>
+
+              <div class="field">
+                <label>Kota <span class="req">*</span></label>
+                <input v-model="form.city" required />
+              </div>
+
+              <div class="field">
+                <label>Kecamatan <span class="req">*</span></label>
+                <input v-model="form.district" required />
+              </div>
+
+              <div class="field span-2 checkbox-row">
+                <input type="checkbox" id="is_default" v-model="form.is_default" />
+                <label for="is_default" class="checkbox-label">Jadikan alamat utama</label>
+              </div>
+
+            </div>
+
+            <div v-if="formError" class="form-error">{{ formError }}</div>
+          </form>
+        </div>
+
+        <div class="addr-modal-foot">
+          <button class="btn-cancel" @click="showForm = false">Batal</button>
+          <button class="btn-save" @click="submitForm" :disabled="submitting">
+            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Delete confirm modal -->
-    <div
-      v-if="deletingAddr"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      @click.self="deletingAddr = null"
-    >
-      <div class="bg-card border rounded-xl w-full max-w-sm p-6">
-        <div class="w-11 h-11 rounded-full bg-red-50 flex items-center justify-center mb-4">
-          <Trash2 class="w-5 h-5 text-red-500" />
+    <div v-if="deletingAddr" class="addr-modal-overlay" @click.self="deletingAddr = null">
+      <div class="addr-modal" style="max-width:420px">
+        <div class="addr-modal-head">
+          <div class="addr-modal-head-left">
+            <div class="addr-modal-icon" style="background:#ef4444"><Trash2 class="w-4 h-4" /></div>
+            <div>
+              <h2 class="addr-modal-title">Hapus Alamat?</h2>
+              <p class="addr-modal-sub">Tindakan ini tidak dapat dibatalkan</p>
+            </div>
+          </div>
+          <button class="addr-modal-close" @click="deletingAddr = null"><X class="w-4 h-4" /></button>
         </div>
-        <h3 class="font-bold text-[16px] mb-1.5">Hapus Alamat?</h3>
-        <p class="text-[13px] text-muted-foreground mb-5">
-          Alamat <strong class="text-foreground">"{{ deletingAddr.label }}"</strong> akan dihapus secara permanen.
-        </p>
-        <div class="flex gap-2.5">
-          <button
-            :disabled="submitting"
-            class="h-[38px] px-5 rounded-[10px] border-0 text-[13px] font-semibold text-white bg-red-600 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
-            @click="deleteAddr"
-          >
+
+        <div class="addr-modal-body">
+          <p class="text-[13px] text-muted-foreground">
+            Alamat <strong class="text-foreground">"{{ deletingAddr.label }}"</strong> akan dihapus secara permanen.
+          </p>
+        </div>
+
+        <div class="addr-modal-foot">
+          <button class="btn-cancel" @click="deletingAddr = null">Batal</button>
+          <button class="btn-delete" @click="deleteAddr" :disabled="submitting">
             {{ submitting ? 'Menghapus...' : 'Hapus' }}
-          </button>
-          <button
-            class="h-[38px] px-5 rounded-[10px] border-[1.5px] text-[13px] font-semibold text-slate-600 bg-background hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
-            @click="deletingAddr = null"
-          >
-            Batal
           </button>
         </div>
       </div>
@@ -219,7 +206,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Plus, MapPin, Pencil, Trash2 } from '@lucide/vue'
+import { Plus, MapPin, Pencil, Trash2, X } from '@lucide/vue'
 import { buyerApi } from '@/services/buyer'
 import { toast } from 'vue-sonner'
 
@@ -285,3 +272,75 @@ async function deleteAddr() {
 
 onMounted(load)
 </script>
+
+<style scoped>
+.addr-modal-overlay {
+  position:fixed; inset:0; background:rgba(15,10,20,.45);
+  display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:16px; backdrop-filter:blur(2px);
+}
+.addr-modal {
+  background:#fff; border-radius:18px; width:100%; max-width:560px;
+  border:1px solid #f3e0e6;
+  box-shadow:0 30px 80px rgba(196,25,82,.2);
+  overflow:hidden;
+}
+.addr-modal-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 24px; border-bottom:1px solid #f3e0e6;
+  background:linear-gradient(135deg,#fdf2f5,#fff);
+}
+.addr-modal-head-left { display:flex; align-items:center; gap:12px; }
+.addr-modal-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:#c41952; color:#fff;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.addr-modal-title { font-size:15px; font-weight:800; color:#1a1a1a; }
+.addr-modal-sub   { font-size:12px; color:#a06070; margin-top:2px; }
+.addr-modal-close {
+  width:32px; height:32px; border-radius:8px; border:1px solid #f3e0e6;
+  background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  color:#9ca3af; transition:all .15s;
+}
+.addr-modal-close:hover { background:#fce4ec; color:#c41952; border-color:#f3c6d4; }
+.addr-modal-body  { padding:22px 24px; }
+.addr-modal-foot  { padding:16px 24px; border-top:1px solid #f3e0e6; display:flex; justify-content:flex-end; gap:8px; }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.span-2 { grid-column:span 2; }
+.field { display:flex; flex-direction:column; gap:6px; }
+.field label { font-size:12px; font-weight:600; color:#374151; }
+.field input {
+  height:38px; padding:0 12px; border-radius:10px;
+  border:1.5px solid #e5e7eb; font-size:13px; outline:none;
+  background:#fff; transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus { border-color:#c41952; box-shadow:0 0 0 3px rgba(196,25,82,.08); }
+.req { color:#c41952; }
+.checkbox-row { flex-direction:row; align-items:center; gap:8px; padding-top:4px; }
+.checkbox-row input[type="checkbox"] { width:16px; height:16px; accent-color:#c41952; cursor:pointer; }
+.checkbox-label { font-size:13px; font-weight:500; color:#374151; cursor:pointer; }
+.form-error { font-size:12px; color:#ef4444; margin-top:12px; }
+
+.btn-cancel {
+  height:36px; padding:0 18px; border-radius:9px;
+  border:1.5px solid #e5e7eb; background:#fff; font-size:13px; font-weight:600;
+  color:#6b7280; cursor:pointer; transition:all .15s;
+}
+.btn-cancel:hover { border-color:#c41952; color:#c41952; background:#fdf2f5; }
+.btn-save {
+  height:36px; padding:0 18px; border-radius:9px;
+  border:0; background:#c41952; color:#fff; font-size:13px; font-weight:600;
+  cursor:pointer; transition:opacity .15s; display:flex; align-items:center; gap:6px;
+}
+.btn-save:hover { opacity:.88; }
+.btn-save:disabled { opacity:.5; cursor:not-allowed; }
+.btn-delete {
+  height:36px; padding:0 18px; border-radius:9px;
+  border:0; background:#ef4444; color:#fff; font-size:13px; font-weight:600;
+  cursor:pointer; transition:opacity .15s;
+}
+.btn-delete:hover { opacity:.88; }
+.btn-delete:disabled { opacity:.5; cursor:not-allowed; }
+</style>

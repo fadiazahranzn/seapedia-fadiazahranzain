@@ -12,10 +12,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(credentials) {
     const { data } = await api.post('/auth/login', credentials)
     token.value = data.token
-    activeRole.value = data.active_role
-    user.value = data.user
+    activeRole.value = null
+    // Normalize roles to string array for UI consumption
+    const roles = data.roles || []
+    user.value = { ...data.user, roles }
     localStorage.setItem('token', data.token)
-    localStorage.setItem('active_role', data.active_role)
+    localStorage.removeItem('active_role')
+
+    // Auto-select role if only one; otherwise caller redirects to /select-role
+    if (roles.length === 1) {
+      await switchRole(roles[0])
+    }
   }
 
   async function register(payload) {
@@ -29,7 +36,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchMe() {
     const { data } = await api.get('/auth/me')
-    user.value = data.user
+    const roles = (data.user.roles || []).map(r => (typeof r === 'string' ? r : r.role))
+    user.value = { ...data.user, roles }
     activeRole.value = data.active_role
   }
 

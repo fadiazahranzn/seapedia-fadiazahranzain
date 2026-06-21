@@ -68,6 +68,35 @@
             </div>
           </div>
 
+          <!-- Delivery tracking (visible when order is being delivered or done) -->
+          <div
+            v-if="['sedang_dikirim', 'pesanan_selesai', 'dikembalikan'].includes(order.status)"
+            class="mb-3 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs"
+          >
+            <div class="flex items-center gap-1.5 mb-2 font-semibold text-blue-700">
+              <Truck class="w-3.5 h-3.5" /> Info Pengiriman
+            </div>
+            <template v-if="trackingData[order.id]">
+              <div class="space-y-1">
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Driver</span>
+                  <span class="font-medium">{{ trackingData[order.id].delivery?.driver?.name ?? 'Belum ada' }}</span>
+                </div>
+                <div v-if="trackingData[order.id].delivery?.picked_up_at" class="flex justify-between">
+                  <span class="text-muted-foreground">Diambil</span>
+                  <span>{{ formatDateTime(trackingData[order.id].delivery.picked_up_at) }}</span>
+                </div>
+                <div v-if="trackingData[order.id].delivery?.delivered_at" class="flex justify-between">
+                  <span class="text-muted-foreground">Diterima</span>
+                  <span>{{ formatDateTime(trackingData[order.id].delivery.delivered_at) }}</span>
+                </div>
+              </div>
+            </template>
+            <button v-else class="text-blue-600 hover:underline" @click="loadTracking(order)">
+              Muat info pengiriman
+            </button>
+          </div>
+
           <!-- Process button -->
           <div v-if="order.status === 'sedang_dikemas'" class="flex justify-end">
             <Button size="sm" :disabled="processing[order.id]" @click="processOrder(order)">
@@ -85,7 +114,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Package } from '@lucide/vue'
+import { Package, Truck } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { sellerApi } from '@/services/seller'
@@ -95,6 +124,7 @@ const orders = ref([])
 const loading = ref(true)
 const processing = reactive({})
 const showTimeline = reactive({})
+const trackingData = reactive({})
 
 function formatPrice(p) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p ?? 0)
@@ -119,6 +149,15 @@ function statusClass(s) { return STATUS_MAP[s]?.class ?? '' }
 
 function toggleTimeline(id) {
   showTimeline[id] = !showTimeline[id]
+}
+
+async function loadTracking(order) {
+  try {
+    const { data } = await sellerApi.getTracking(order.id)
+    trackingData[order.id] = data.data
+  } catch {
+    toast.error('Gagal memuat info pengiriman.')
+  }
 }
 
 async function processOrder(order) {

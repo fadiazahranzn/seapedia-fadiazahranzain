@@ -171,12 +171,25 @@ class DeliveryController extends Controller
     }
 
     // Buyer/Seller: tracking pengiriman
-    public function trackOrder(Order $order): JsonResponse
+    public function trackOrder(Request $request, Order $order): JsonResponse
     {
         $role = $this->activeRole();
 
         if (!in_array($role, ['buyer', 'seller'])) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
+
+        // Buyer hanya bisa track order miliknya
+        if ($role === 'buyer' && $order->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Pesanan tidak ditemukan.'], 404);
+        }
+
+        // Seller hanya bisa track order tokonya
+        if ($role === 'seller') {
+            $store = $request->user()->store;
+            if (!$store || $order->store_id !== $store->id) {
+                return response()->json(['message' => 'Pesanan tidak ditemukan.'], 404);
+            }
         }
 
         $delivery = $order->delivery()->with('driver:id,name')->first();
