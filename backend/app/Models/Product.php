@@ -8,12 +8,12 @@ class Product extends Model
 {
     protected $fillable = [
         'store_id', 'name', 'category', 'brand', 'description',
-        'price', 'original_price', 'stock', 'weight', 'image_url', 'specifications',
+        'price', 'original_price', 'stock', 'weight', 'image_url', 'images', 'video_url', 'specifications',
     ];
 
     protected function casts(): array
     {
-        return ['specifications' => 'array'];
+        return ['specifications' => 'array', 'images' => 'array'];
     }
 
     public function store()

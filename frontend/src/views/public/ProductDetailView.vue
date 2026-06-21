@@ -24,23 +24,43 @@
 
     <!-- Detail -->
     <div v-else class="detail-grid">
-      <!-- Left: Image -->
+      <!-- Left: Image / Video -->
       <div>
+        <!-- Main display -->
         <div class="detail-img-wrap">
-          <img v-if="activeImg" :src="activeImg" :alt="product.name" />
-          <Package v-else :size="96" color="#f3c6d4" />
+          <video
+            v-if="activeMedia === 'video' && product.video_url"
+            :src="product.video_url"
+            controls
+            class="detail-video"
+          />
+          <template v-else>
+            <img v-if="activeImg" :src="activeImg" :alt="product.name" />
+            <Package v-else :size="96" color="#f3c6d4" />
+          </template>
           <span v-if="product.original_price" class="img-badge">SALE</span>
         </div>
+
+        <!-- Thumbnail strip (foto + video) -->
         <div class="thumb-strip">
           <div
-            v-for="(img, i) in thumbImages"
-            :key="i"
+            v-for="(img, i) in realImages"
+            :key="'img'+i"
             class="thumb-item"
-            :class="{ active: activeImg === img }"
-            @click="activeImg = img"
+            :class="{ active: activeMedia === 'photo' && activeImg === img }"
+            @click="selectPhoto(img)"
           >
-            <img v-if="img" :src="img" :alt="product.name" />
-            <Package v-else :size="22" color="#f3c6d4" />
+            <img :src="img" :alt="product.name" />
+          </div>
+          <!-- video thumb -->
+          <div
+            v-if="product.video_url"
+            class="thumb-item thumb-video"
+            :class="{ active: activeMedia === 'video' }"
+            @click="activeMedia = 'video'"
+          >
+            <video :src="product.video_url" class="thumb-video-preview" />
+            <div class="thumb-play"><PlayCircle :size="22" color="#fff" /></div>
           </div>
         </div>
       </div>
@@ -165,7 +185,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
-import { Package, Store, MapPin } from '@lucide/vue'
+import { Package, Store, MapPin, PlayCircle } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import { buyerApi } from '@/services/buyer'
@@ -179,20 +199,25 @@ const loading = ref(true)
 const qty = ref(1)
 const adding = ref(false)
 const activeImg = ref(null)
+const activeMedia = ref('photo') // 'photo' | 'video'
 
 const discountPercent = computed(() => {
   if (!product.value?.original_price) return 0
   return Math.round((1 - product.value.price / product.value.original_price) * 100)
 })
 
-const thumbImages = computed(() => {
+const realImages = computed(() => {
   if (!product.value) return []
   const imgs = product.value.images?.length
-    ? [...product.value.images]
-    : [product.value.image_url || null]
-  while (imgs.length < 4) imgs.push(null)
-  return imgs.slice(0, 4)
+    ? product.value.images
+    : (product.value.image_url ? [product.value.image_url] : [])
+  return imgs
 })
+
+function selectPhoto(img) {
+  activeImg.value = img
+  activeMedia.value = 'photo'
+}
 
 function formatPrice(price) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price)
@@ -223,7 +248,8 @@ onMounted(async () => {
   try {
     const { data } = await api.get(`/products/${route.params.id}`)
     product.value = data.data || data
-    activeImg.value = product.value?.image_url || null
+    activeImg.value = product.value?.images?.[0] || product.value?.image_url || null
+    activeMedia.value = 'photo'
   } catch { product.value = null }
   finally { loading.value = false }
 })
@@ -258,18 +284,30 @@ onMounted(async () => {
   letter-spacing: .06em; padding: 4px 12px; border-radius: 9999px;
 }
 
+/* VIDEO in main wrap */
+.detail-video { width: 100%; height: 100%; object-fit: contain; background: #0a0a0a; border-radius: 18px; }
+
 /* THUMBNAILS */
-.thumb-strip { display: flex; gap: 10px; margin-top: 14px; }
+.thumb-strip { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 .thumb-item {
-  flex: 1; aspect-ratio: 1; background: #fff;
+  width: 72px; height: 72px; background: #fff;
   border: 2px solid #f3e0e6; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  overflow: hidden; cursor: pointer;
+  overflow: hidden; cursor: pointer; flex-shrink: 0;
   transition: border-color .15s, transform .1s;
 }
 .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
 .thumb-item:hover { border-color: #c41952; transform: translateY(-2px); }
-.thumb-item.active { border-color: #c41952; }
+.thumb-item.active { border-color: #c41952; box-shadow: 0 0 0 2px rgba(196,25,82,.2); }
+
+/* Video thumbnail */
+.thumb-video { position: relative; }
+.thumb-video-preview { width: 100%; height: 100%; object-fit: cover; }
+.thumb-play {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.35);
+}
+.thumb-video:hover .thumb-play { background: rgba(196,25,82,.5); }
 
 /* INFO */
 .detail-info { display: flex; flex-direction: column; gap: 18px; }

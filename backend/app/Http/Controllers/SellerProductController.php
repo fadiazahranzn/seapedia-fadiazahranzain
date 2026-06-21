@@ -47,8 +47,19 @@ class SellerProductController extends Controller
             'stock'          => 'required|integer|min:0',
             'weight'         => 'nullable|numeric|min:0',
             'image_url'      => 'nullable|url|max:500',
+            'images.*'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'video'          => 'nullable|mimes:mp4,mov,webm|max:61440',
             'specifications' => 'nullable|array',
         ]);
+
+        $data['images'] = $this->storeImages($request);
+        if ($request->hasFile('video')) {
+            $data['video_url'] = asset('storage/' . $request->file('video')->store('products/videos', 'public'));
+        }
+        if (!empty($data['images'])) {
+            $data['image_url'] = $data['images'][0];
+        }
+        unset($data['images.*']);
 
         $product = $this->sellerStore($request)->products()->create($data);
 
@@ -72,12 +83,43 @@ class SellerProductController extends Controller
             'stock'          => 'required|integer|min:0',
             'weight'         => 'nullable|numeric|min:0',
             'image_url'      => 'nullable|url|max:500',
+            'images.*'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'video'          => 'nullable|mimes:mp4,mov,webm|max:61440',
             'specifications' => 'nullable|array',
         ]);
+
+        $newImages = $this->storeImages($request);
+        $existingImages = $request->input('existing_images', []);
+        if (is_string($existingImages)) {
+            $existingImages = json_decode($existingImages, true) ?? [];
+        }
+        $data['images'] = array_merge($existingImages, $newImages);
+
+        if ($request->hasFile('video')) {
+            $data['video_url'] = asset('storage/' . $request->file('video')->store('products/videos', 'public'));
+        } elseif ($request->input('remove_video')) {
+            $data['video_url'] = null;
+        }
+
+        if (!empty($data['images'])) {
+            $data['image_url'] = $data['images'][0];
+        }
+        unset($data['images.*']);
 
         $product->update($data);
 
         return response()->json(['message' => 'Produk berhasil diperbarui.', 'data' => $product]);
+    }
+
+    private function storeImages(Request $request): array
+    {
+        $urls = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $urls[] = asset('storage/' . $file->store('products', 'public'));
+            }
+        }
+        return $urls;
     }
 
     public function destroy(Request $request, Product $product): JsonResponse

@@ -8,8 +8,13 @@ export const sellerApi = {
 
   // Products
   getProducts: (params) => api.get('/seller/products', { params }),
-  createProduct: (data) => api.post('/seller/products', data),
-  updateProduct: (id, data) => api.put(`/seller/products/${id}`, data),
+  createProduct: (data) => api.post('/seller/products', data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
+  updateProduct: (id, data) => {
+    if (data instanceof FormData) {
+      return api.post(`/seller/products/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } })
+    }
+    return api.put(`/seller/products/${id}`, data)
+  },
   deleteProduct: (id) => api.delete(`/seller/products/${id}`),
 
   // Orders

@@ -131,13 +131,32 @@
         :key="product.id"
         class="product-card"
         @click="router.push(`/products/${product.id}`)"
+        @mouseenter="startCycle(product.id)"
+        @mouseleave="stopCycle(product.id)"
       >
         <div class="product-img">
-          <img v-if="product.image_url" :src="product.image_url" :alt="product.name" />
+          <img
+            v-if="cardImages(product).length"
+            :src="cardImages(product)[activeIndex[product.id] ?? 0]"
+            :alt="product.name"
+          />
           <Package v-else :size="40" color="#f3c6d4" />
           <span v-if="idx % 5 === 0 || idx % 5 === 4" class="product-badge">SALE</span>
           <span v-else-if="idx % 5 === 1" class="product-badge new">NEW</span>
           <span v-else-if="idx % 5 === 3" class="product-badge hot">HOT</span>
+
+          <!-- Dot indicators (hanya jika > 1 foto) -->
+          <div v-if="cardImages(product).length > 1" class="card-dots">
+            <span
+              v-for="(_, i) in cardImages(product)"
+              :key="i"
+              class="card-dot"
+              :class="{ active: (activeIndex[product.id] ?? 0) === i }"
+            />
+          </div>
+
+          <!-- Video badge -->
+          <div v-if="product.video_url" class="card-video-badge">▶ Video</div>
         </div>
         <div class="product-body">
           <div class="product-meta">
@@ -200,6 +219,29 @@ const route  = useRoute()
 
 const products   = ref([])
 const loading    = ref(true)
+const activeIndex = ref({})  // { [product.id]: currentPhotoIndex }
+const cycleTimers = {}       // { [product.id]: intervalId }
+
+function cardImages(product) {
+  if (product.images?.length) return product.images
+  if (product.image_url) return [product.image_url]
+  return []
+}
+
+function startCycle(id) {
+  const product = products.value.find(p => p.id === id)
+  const imgs = cardImages(product)
+  if (imgs.length <= 1) return
+  cycleTimers[id] = setInterval(() => {
+    activeIndex.value[id] = ((activeIndex.value[id] ?? 0) + 1) % imgs.length
+  }, 1500)
+}
+
+function stopCycle(id) {
+  clearInterval(cycleTimers[id])
+  delete cycleTimers[id]
+  activeIndex.value[id] = 0
+}
 const search     = ref(route.query.search   || '')
 const category   = ref(route.query.category || '')
 const sort       = ref(route.query.sort     || 'terbaru')
@@ -422,6 +464,29 @@ onMounted(fetchProducts)
   overflow: hidden; position: relative;
 }
 .product-img img { width: 100%; height: 100%; object-fit: cover; }
+
+/* DOT INDICATORS */
+.card-dots {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 3;
+  opacity: 0; transition: opacity .2s;
+}
+.product-card:hover .card-dots { opacity: 1; }
+.card-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.6);
+  transition: background .2s, transform .2s;
+}
+.card-dot.active { background: #fff; transform: scale(1.3); }
+
+/* VIDEO BADGE */
+.card-video-badge {
+  position: absolute; bottom: 10px; right: 10px; z-index: 3;
+  background: rgba(0,0,0,.55); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 3px 7px; border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
 
 /* BADGE */
 .product-badge {

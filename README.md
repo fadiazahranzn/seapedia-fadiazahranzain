@@ -14,16 +14,10 @@ Platform e-commerce multi-role berbasis web yang memungkinkan Buyer berbelanja, 
 - [Alur Penggunaan](#alur-penggunaan)
 - [Aturan Bisnis](#aturan-bisnis)
 - [Security](#security)
+- [Security Testing Checklist](#security-testing-checklist)
 - [Testing Guide](#testing-guide)
 - [API Overview](#api-overview)
-- [Konfigurasi Environment](#konfigurasi-environment)
-- [Demo Accounts](#demo-accounts)
-- [Role & Akses](#role--akses)
-- [Alur Penggunaan](#alur-penggunaan)
-- [Aturan Bisnis](#aturan-bisnis)
-- [Security](#security)
-- [Testing Guide](#testing-guide)
-- [API Overview](#api-overview)
+- [Postman Collection](#postman-collection)
 
 ---
 
@@ -341,6 +335,57 @@ Validasi dilakukan di dua lapisan:
 
 ---
 
+## Security Testing Checklist
+
+Checklist berikut dapat digunakan untuk memverifikasi bahwa security measures berjalan dengan benar.
+
+### XSS Prevention
+
+| Test Case | Input | Expected Result |
+|---|---|---|
+| Script tag di review comment | `<script>alert('xss')</script>` | Tampil sebagai teks literal, tidak dieksekusi |
+| HTML tag di review comment | `<b>bold</b><img src=x onerror=alert(1)>` | Tampil sebagai teks biasa, gambar tidak dimuat |
+| Script tag di nama produk (seller) | `<script>alert(1)</script>` | Tersimpan dan ditampilkan sebagai teks literal |
+| Event handler di input | `" onmouseover="alert(1)` | Tidak dieksekusi, ditampilkan aman |
+
+### SQL Injection Prevention
+
+| Test Case | Input | Expected Result |
+|---|---|---|
+| Login bypass | Email: `' OR '1'='1' --` | Login gagal dengan pesan error biasa |
+| Search injection | `' UNION SELECT * FROM users --` | Hasil pencarian kosong atau normal, tidak ada data bocor |
+| ID manipulation | Akses `/api/seller/products/1` dengan token seller lain | HTTP 403 Forbidden |
+
+### Role-Based Access Control
+
+| Test Case | Aksi | Expected Result |
+|---|---|---|
+| Buyer akses seller endpoint | `POST /api/seller/products` dengan token buyer | HTTP 403 Forbidden |
+| Driver akses admin endpoint | `GET /api/admin/dashboard` dengan token driver | HTTP 403 Forbidden |
+| Seller edit produk seller lain | `PUT /api/seller/products/{id_produk_seller_lain}` | HTTP 403 Forbidden |
+| Buyer akses order buyer lain | `GET /api/buyer/orders/{id_order_buyer_lain}` | HTTP 403 Forbidden |
+| Akses tanpa token | `GET /api/buyer/wallet` tanpa header Authorization | HTTP 401 Unauthorized |
+
+### Session & Token
+
+| Test Case | Aksi | Expected Result |
+|---|---|---|
+| Logout invalidasi token | Logout lalu gunakan token lama | HTTP 401 Unauthorized |
+| Token expired | Gunakan token > 24 jam | HTTP 401 Unauthorized |
+| Ganti role tanpa re-login | Akses seller endpoint dengan token aktif role buyer | HTTP 403 Forbidden |
+
+### Input Validation
+
+| Test Case | Input | Expected Result |
+|---|---|---|
+| Harga negatif | `price: -1000` | HTTP 422 Validation Error |
+| Stok negatif | `stock: -5` | HTTP 422 Validation Error |
+| Rating di luar range | `rating: 6` | HTTP 422 Validation Error |
+| Email tidak valid | `email: bukan-email` | HTTP 422 Validation Error |
+| Checkout saldo kurang | Checkout > saldo wallet | HTTP 422 dengan pesan saldo tidak cukup |
+
+---
+
 ## Testing Guide
 
 ### End-to-End Demo Flow
@@ -513,3 +558,37 @@ Query params `/products`: `search`, `category`, `sort` (`terbaru`/`harga_asc`/`h
 | PUT | `/reviews/{id}` | Edit ulasan (pemilik saja) |
 | POST | `/vouchers/validate` | Validasi kode voucher |
 | POST | `/promos/validate` | Validasi kode promo |
+
+---
+
+## Postman Collection
+
+File Postman Collection tersedia di:
+
+```
+seapedia/SEAPEDIA.postman_collection.json
+```
+
+### Cara Import
+
+1. Buka **Postman**
+2. Klik **Import** (pojok kiri atas)
+3. Pilih file `SEAPEDIA.postman_collection.json`
+4. Collection akan muncul di sidebar Postman
+
+### Setup Environment
+
+Setelah import, buat environment baru di Postman dengan variable berikut:
+
+| Variable | Value |
+|---|---|
+| `base_url` | `http://localhost:8000/api` |
+| `token` | *(diisi otomatis setelah login)* |
+
+### Cara Pakai
+
+1. Jalankan request **Login** di folder `Auth` — token JWT akan tersimpan
+2. Semua request lain menggunakan header `Authorization: Bearer {{token}}` secara otomatis
+3. Gunakan demo accounts yang tersedia di section [Demo Accounts](#demo-accounts) untuk login sesuai role
+
+> **Tip**: Jalankan request sesuai urutan flow — Login → pilih role → lakukan aksi sesuai role aktif.
