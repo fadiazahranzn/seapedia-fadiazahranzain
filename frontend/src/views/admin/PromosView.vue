@@ -119,6 +119,22 @@
       </div>
     </div>
 
+    <!-- Filter -->
+    <div v-if="!loading && promos.length" class="filter-bar">
+      <div class="filter-tabs">
+        <button
+          v-for="f in statusFilters"
+          :key="f.value"
+          class="ftab"
+          :class="{ active: activeFilter === f.value }"
+          @click="activeFilter = f.value"
+        >
+          {{ f.label }}
+          <span class="ftab-count">{{ f.value === 'all' ? promos.length : f.value === 'active' ? activeCount : expiredCount }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Loading -->
     <div v-if="loading" class="promo-list">
       <div v-for="i in 4" :key="i" class="skeleton" />
@@ -134,7 +150,7 @@
 
     <!-- Promo list -->
     <div v-else class="promo-list">
-      <div v-for="p in promos" :key="p.id" class="pcard" :class="{ expired: isExpired(p) }">
+      <div v-for="p in filteredPromos" :key="p.id" class="pcard" :class="{ expired: isExpired(p) }">
 
         <!-- Left accent -->
         <div class="pcard-accent" />
@@ -204,8 +220,19 @@ const form = reactive({
   discount_value: '', min_purchase: '', max_discount: '', expires_at: '',
 })
 
+const activeFilter = ref('all')
+const statusFilters = [
+  { value: 'all',     label: 'Semua' },
+  { value: 'active',  label: 'Aktif' },
+  { value: 'expired', label: 'Kadaluarsa' },
+]
 const activeCount  = computed(() => promos.value.filter(p => !isExpired(p)).length)
 const expiredCount = computed(() => promos.value.filter(p => isExpired(p)).length)
+const filteredPromos = computed(() => {
+  if (activeFilter.value === 'active')  return promos.value.filter(p => !isExpired(p))
+  if (activeFilter.value === 'expired') return promos.value.filter(p => isExpired(p))
+  return promos.value
+})
 
 function formatPrice(p) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p ?? 0)
@@ -494,4 +521,20 @@ onMounted(async () => {
 
 .animate-spin { animation:spin .7s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Filter bar ── */
+.filter-bar { display:flex; align-items:center; }
+.filter-tabs { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.ftab {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:600; font-family:inherit;
+  padding:6px 14px; border-radius:9999px;
+  border:1.5px solid #e2e8f0; background:#fff; color:#6b7280;
+  cursor:pointer; transition:all .15s;
+}
+.ftab.active { border-color:#c41952; color:#c41952; background:#fdf2f5; }
+.ftab:not(.active):hover { border-color:#c4a8b4; color:#374151; }
+.ftab-count {
+  font-size:10px; font-weight:700; opacity:.7;
+}
 </style>

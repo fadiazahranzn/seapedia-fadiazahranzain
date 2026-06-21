@@ -19,65 +19,44 @@
       </div>
 
       <!-- Filter Panel -->
-      <div v-if="showFilter && !loading && completedJobs.length" class="px-4 pb-4 space-y-3 border-t border-border pt-3">
-        <!-- Date Range -->
-        <div>
-          <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Rentang Tanggal</p>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="block">
-              <span class="text-[10px] text-muted-foreground mb-1 block">Dari</span>
-              <div
-                class="relative flex items-center bg-secondary border border-border rounded-xl px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
-                @click="$refs.dateFrom.showPicker?.()"
-              >
-                <span class="text-xs text-foreground flex-1">
-                  {{ filters.dateFrom ? formatDateShort(filters.dateFrom) : 'Pilih tanggal' }}
-                </span>
-                <CalendarDays class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <input ref="dateFrom" v-model="filters.dateFrom" type="date" class="absolute inset-0 opacity-0 w-full cursor-pointer" />
-              </div>
-            </label>
-            <label class="block">
-              <span class="text-[10px] text-muted-foreground mb-1 block">Sampai</span>
-              <div
-                class="relative flex items-center bg-secondary border border-border rounded-xl px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
-                @click="$refs.dateTo.showPicker?.()"
-              >
-                <span class="text-xs text-foreground flex-1">
-                  {{ filters.dateTo ? formatDateShort(filters.dateTo) : 'Pilih tanggal' }}
-                </span>
-                <CalendarDays class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <input ref="dateTo" v-model="filters.dateTo" type="date" class="absolute inset-0 opacity-0 w-full cursor-pointer" />
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Sort -->
-        <div>
-          <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Urutkan</p>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="opt in sortOptions" :key="opt.value"
-              @click="filters.sort = opt.value"
-              class="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer"
-              :class="filters.sort === opt.value
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-secondary text-foreground border-border hover:bg-accent'"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Reset -->
+      <div v-if="showFilter && !loading && completedJobs.length" class="border-t border-border px-4 py-3 flex flex-wrap items-center gap-2">
+        <input
+          v-model="filters.dateFrom"
+          type="date"
+          :max="filters.dateTo || undefined"
+          class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600"
+          @focus="$event.target.style.borderColor='#c41952'"
+          @blur="$event.target.style.borderColor=''"
+        />
+        <span class="text-slate-300 text-sm">—</span>
+        <input
+          v-model="filters.dateTo"
+          type="date"
+          :min="filters.dateFrom || undefined"
+          class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600"
+          @focus="$event.target.style.borderColor='#c41952'"
+          @blur="$event.target.style.borderColor=''"
+        />
         <button
-          v-if="hasActiveFilters"
-          @click="resetFilters"
-          class="w-full text-xs font-semibold text-destructive bg-destructive/10 hover:bg-destructive/20 py-2 rounded-xl border border-destructive/20 transition-colors cursor-pointer"
-        >
-          Reset Semua Filter
-        </button>
+          v-if="filters.dateFrom || filters.dateTo"
+          @click="filters.dateFrom = ''; filters.dateTo = ''"
+          class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 transition-all cursor-pointer"
+        >✕</button>
+
+        <div class="w-px h-5 bg-slate-200 mx-1 hidden sm:block" />
+
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="opt in sortOptions" :key="opt.value"
+            @click="filters.sort = opt.value"
+            class="text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer"
+            :style="filters.sort === opt.value
+              ? 'border-color:#c41952;color:#c41952;background:#fdf2f5'
+              : 'border-color:#e2e8f0;color:#6b7280;background:#fff'"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
       </div>
     </div>
 

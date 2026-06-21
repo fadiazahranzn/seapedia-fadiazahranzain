@@ -128,6 +128,22 @@
       </div>
     </div>
 
+    <!-- Filter -->
+    <div v-if="!loading && vouchers.length" class="filter-bar">
+      <div class="filter-tabs">
+        <button
+          v-for="f in statusFilters"
+          :key="f.value"
+          class="ftab"
+          :class="{ active: activeFilter === f.value }"
+          @click="activeFilter = f.value"
+        >
+          {{ f.label }}
+          <span class="ftab-count">{{ statusFilterCount(f.value) }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Loading -->
     <div v-if="loading" class="voucher-grid">
       <div v-for="i in 6" :key="i" class="skeleton" />
@@ -143,7 +159,7 @@
 
     <!-- Voucher grid -->
     <div v-else class="voucher-grid">
-      <div v-for="v in vouchers" :key="v.id" class="voucher-card" :class="statusClass(v)">
+      <div v-for="v in filteredVouchers" :key="v.id" class="voucher-card" :class="statusClass(v)">
 
         <div class="voucher-top">
           <div class="voucher-code">{{ v.code }}</div>
@@ -216,9 +232,31 @@ const form = reactive({
   usage_limit: '', expires_at: '',
 })
 
+const activeFilter = ref('all')
+const statusFilters = [
+  { value: 'all',     label: 'Semua' },
+  { value: 'active',  label: 'Aktif' },
+  { value: 'expired', label: 'Kadaluarsa' },
+  { value: 'used-up', label: 'Habis' },
+]
 const activeCount  = computed(() => vouchers.value.filter(v => !isExpired(v) && !isUsedUp(v)).length)
 const expiredCount = computed(() => vouchers.value.filter(v => isExpired(v)).length)
 const usedUpCount  = computed(() => vouchers.value.filter(v => !isExpired(v) && isUsedUp(v)).length)
+
+function statusFilterCount(val) {
+  if (val === 'all')     return vouchers.value.length
+  if (val === 'active')  return activeCount.value
+  if (val === 'expired') return expiredCount.value
+  if (val === 'used-up') return usedUpCount.value
+  return 0
+}
+
+const filteredVouchers = computed(() => {
+  if (activeFilter.value === 'active')  return vouchers.value.filter(v => !isExpired(v) && !isUsedUp(v))
+  if (activeFilter.value === 'expired') return vouchers.value.filter(v => isExpired(v))
+  if (activeFilter.value === 'used-up') return vouchers.value.filter(v => !isExpired(v) && isUsedUp(v))
+  return vouchers.value
+})
 
 function isExpired(v) { return new Date(v.expires_at) < new Date() }
 function isUsedUp(v)  { return v.used_count >= v.usage_limit }
@@ -540,4 +578,20 @@ onMounted(async () => {
 
 .animate-spin { animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Filter bar ── */
+.filter-bar { display:flex; align-items:center; }
+.filter-tabs { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.ftab {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:600; font-family:inherit;
+  padding:6px 14px; border-radius:9999px;
+  border:1.5px solid #e2e8f0; background:#fff; color:#6b7280;
+  cursor:pointer; transition:all .15s;
+}
+.ftab.active { border-color:#c41952; color:#c41952; background:#fdf2f5; }
+.ftab:not(.active):hover { border-color:#c4a8b4; color:#374151; }
+.ftab-count {
+  font-size:10px; font-weight:700; opacity:.7;
+}
 </style>

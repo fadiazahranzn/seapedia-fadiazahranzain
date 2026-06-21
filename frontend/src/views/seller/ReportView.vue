@@ -44,6 +44,37 @@
           </div>
           <p class="text-xs opacity-60 mt-1">{{ incomeRatio }}% pendapatan bersih dari total pemasukan</p>
         </div>
+
+        <!-- Stats row -->
+        <div class="mt-5 flex items-center divide-x divide-white/20 bg-white/10 rounded-xl px-1">
+          <div class="flex items-center gap-2.5 px-4 py-3 flex-1">
+            <div class="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+              <ArrowUpRight class="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <p class="text-[10px] opacity-60 leading-none mb-1">Total Pemasukan</p>
+              <p class="text-sm font-bold leading-none">{{ formatPrice(report.summary.total_income) }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2.5 px-4 py-3 flex-1">
+            <div class="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+              <ArrowDownLeft class="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <p class="text-[10px] opacity-60 leading-none mb-1">Total Pengembalian</p>
+              <p class="text-sm font-bold leading-none">{{ formatPrice(report.summary.total_reversal) }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2.5 px-4 py-3 flex-1">
+            <div class="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+              <Clock class="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <p class="text-[10px] opacity-60 leading-none mb-1">Update Terakhir</p>
+              <p class="text-sm font-bold leading-none">{{ report.summary.last_updated ?? '—' }}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Summary stat cards -->
@@ -109,15 +140,76 @@
             </button>
           </div>
 
+          <!-- Filter bar (shared date range + context-specific chips) -->
+          <div class="flex flex-wrap items-center gap-2 mb-5 px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50">
+            <input
+              v-model="dateFrom"
+              type="date"
+              :max="dateTo || undefined"
+              class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600 bg-white"
+              @focus="$event.target.style.borderColor='#c41952'"
+              @blur="$event.target.style.borderColor=''"
+            />
+            <span class="text-slate-300 text-sm">—</span>
+            <input
+              v-model="dateTo"
+              type="date"
+              :min="dateFrom || undefined"
+              class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600 bg-white"
+              @focus="$event.target.style.borderColor='#c41952'"
+              @blur="$event.target.style.borderColor=''"
+            />
+            <button
+              v-if="dateFrom || dateTo"
+              @click="dateFrom = ''; dateTo = ''"
+              class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 transition-all cursor-pointer bg-white"
+            >✕</button>
+
+            <template v-if="activeTab === 'orders'">
+              <div class="w-px h-5 bg-slate-300 mx-1 hidden sm:block" />
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="s in statusFilters"
+                  :key="s.key"
+                  @click="activeStatus = s.key"
+                  class="text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer"
+                  :style="activeStatus === s.key
+                    ? 'border-color:#c41952;color:#c41952;background:#fdf2f5'
+                    : 'border-color:#e2e8f0;color:#6b7280;background:#fff'"
+                >
+                  {{ s.label }}
+                  <span class="ml-1 opacity-70">{{ s.count }}</span>
+                </button>
+              </div>
+            </template>
+
+            <template v-if="activeTab === 'transactions'">
+              <div class="w-px h-5 bg-slate-300 mx-1 hidden sm:block" />
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="f in txTypeFilters"
+                  :key="f.value"
+                  @click="activeTxType = f.value"
+                  class="text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer"
+                  :style="activeTxType === f.value
+                    ? 'border-color:#c41952;color:#c41952;background:#fdf2f5'
+                    : 'border-color:#e2e8f0;color:#6b7280;background:#fff'"
+                >
+                  {{ f.label }}
+                </button>
+              </div>
+            </template>
+          </div>
+
           <!-- Riwayat Transaksi -->
           <div v-if="activeTab === 'transactions'">
-            <div v-if="!report.transactions?.length" class="flex flex-col items-center py-10 text-muted-foreground">
+            <div v-if="!filteredTransactions.length" class="flex flex-col items-center py-10 text-muted-foreground">
               <ReceiptText class="w-10 h-10 mb-2 opacity-20" />
               <p class="text-sm">Belum ada transaksi.</p>
             </div>
             <div v-else class="divide-y">
               <div
-                v-for="tx in report.transactions"
+                v-for="tx in filteredTransactions"
                 :key="tx.id"
                 class="py-3 flex items-center justify-between gap-3"
               >
@@ -148,22 +240,6 @@
 
           <!-- Semua Pesanan -->
           <div v-else-if="activeTab === 'orders'">
-            <!-- Status filter chips -->
-            <div class="flex flex-wrap gap-2 mb-4">
-              <button
-                v-for="s in statusFilters"
-                :key="s.key"
-                @click="activeStatus = s.key"
-                :class="activeStatus === s.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'"
-                class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-              >
-                {{ s.label }}
-                <span class="ml-1 opacity-70">({{ s.count }})</span>
-              </button>
-            </div>
-
             <div v-if="!filteredOrders.length" class="flex flex-col items-center py-10 text-muted-foreground">
               <ClipboardList class="w-10 h-10 mb-2 opacity-20" />
               <p class="text-sm">Tidak ada pesanan dengan status ini.</p>
@@ -203,7 +279,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   TrendingUp, ArrowUpRight, ArrowDownLeft,
   ShoppingBag, Package, CheckCircle,
-  ReceiptText, ClipboardList
+  ReceiptText, ClipboardList, Clock
 } from '@lucide/vue'
 import { Card, CardContent } from '@/components/ui/card'
 import { sellerApi } from '@/services/seller'
@@ -211,11 +287,31 @@ import { sellerApi } from '@/services/seller'
 const report = ref({ summary: {}, orders: [], transactions: [] })
 const loading = ref(true)
 const activeTab = ref('transactions')
-
 const activeStatus = ref('all')
+const activeTxType = ref('all')
+const dateFrom = ref('')
+const dateTo = ref('')
+
+const txTypeFilters = [
+  { value: 'all',      label: 'Semua' },
+  { value: 'income',   label: 'Pemasukan' },
+  { value: 'reversal', label: 'Pengembalian' },
+]
+
+function inDateRange(dateStr) {
+  if (!dateFrom.value && !dateTo.value) return true
+  const d = new Date(dateStr)
+  if (dateFrom.value && d < new Date(dateFrom.value)) return false
+  if (dateTo.value && d > new Date(dateTo.value + 'T23:59:59')) return false
+  return true
+}
+
+const dateFilteredOrders = computed(() =>
+  (report.value.orders ?? []).filter(o => inDateRange(o.created_at))
+)
 
 const statusFilters = computed(() => {
-  const orders = report.value.orders ?? []
+  const orders = dateFilteredOrders.value
   const counts = {}
   for (const o of orders) counts[o.status] = (counts[o.status] ?? 0) + 1
   return [
@@ -227,8 +323,14 @@ const statusFilters = computed(() => {
 })
 
 const filteredOrders = computed(() => {
-  const orders = report.value.orders ?? []
+  const orders = dateFilteredOrders.value
   return activeStatus.value === 'all' ? orders : orders.filter(o => o.status === activeStatus.value)
+})
+
+const filteredTransactions = computed(() => {
+  let txs = (report.value.transactions ?? []).filter(t => inDateRange(t.created_at))
+  if (activeTxType.value !== 'all') txs = txs.filter(t => t.type === activeTxType.value)
+  return txs
 })
 
 const tabs = computed(() => [

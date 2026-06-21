@@ -111,19 +111,46 @@
         </span>
       </div>
 
-      <!-- filter chips -->
-      <div class="flex gap-1.5 px-5 py-3 border-b overflow-x-auto scrollbar-none">
+      <!-- Filter bar: date range + type chips -->
+      <div class="px-5 py-3 border-b flex flex-wrap items-center gap-2">
+        <input
+          v-model="dateFrom"
+          type="date"
+          :max="dateTo || undefined"
+          class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600"
+          @focus="$event.target.style.borderColor='#c41952'"
+          @blur="$event.target.style.borderColor=''"
+        />
+        <span class="text-slate-300 text-sm">—</span>
+        <input
+          v-model="dateTo"
+          type="date"
+          :min="dateFrom || undefined"
+          class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600"
+          @focus="$event.target.style.borderColor='#c41952'"
+          @blur="$event.target.style.borderColor=''"
+        />
         <button
-          v-for="f in filters"
-          :key="f.value"
-          class="shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-semibold border-[1.5px] cursor-pointer transition-all"
-          :class="activeFilter === f.value
-            ? 'bg-primary text-white border-primary shadow-sm'
-            : 'border-border text-muted-foreground bg-background hover:border-primary/40 hover:text-foreground'"
-          @click="activeFilter = f.value"
-        >
-          {{ f.label }}
-        </button>
+          v-if="dateFrom || dateTo"
+          @click="dateFrom = ''; dateTo = ''"
+          class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 transition-all cursor-pointer"
+        >✕</button>
+
+        <div class="w-px h-5 bg-slate-200 mx-1 hidden sm:block" />
+
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="f in filters"
+            :key="f.value"
+            class="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer"
+            :style="activeFilter === f.value
+              ? 'border-color:#c41952;color:#c41952;background:#fdf2f5'
+              : 'border-color:#e2e8f0;color:#6b7280;background:#fff'"
+            @click="activeFilter = f.value"
+          >
+            {{ f.label }}
+          </button>
+        </div>
       </div>
 
       <!-- skeleton -->
@@ -214,6 +241,8 @@ const topUpError    = ref('')
 const loadingTx     = ref(true)
 const walletLoading = ref(true)
 const activeFilter  = ref('all')
+const dateFrom      = ref('')
+const dateTo        = ref('')
 
 const quickAmounts = [50000, 100000, 200000, 500000, 1000000]
 
@@ -224,10 +253,20 @@ const filters = [
   { value: 'refund',  label: 'Refund' },
 ]
 
+const dateFilteredTxs = computed(() => {
+  if (!dateFrom.value && !dateTo.value) return transactions.value
+  return transactions.value.filter(t => {
+    const d = new Date(t.created_at)
+    if (dateFrom.value && d < new Date(dateFrom.value)) return false
+    if (dateTo.value && d > new Date(dateTo.value + 'T23:59:59')) return false
+    return true
+  })
+})
+
 const filteredTxs = computed(() =>
   activeFilter.value === 'all'
-    ? transactions.value
-    : transactions.value.filter(t => t.type === activeFilter.value)
+    ? dateFilteredTxs.value
+    : dateFilteredTxs.value.filter(t => t.type === activeFilter.value)
 )
 
 const totalIn  = computed(() => transactions.value.filter(t => t.type !== 'payment').reduce((s, t) => s + t.amount, 0))

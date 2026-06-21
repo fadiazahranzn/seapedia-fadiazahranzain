@@ -418,12 +418,42 @@ class OrderController extends Controller
             return response()->json(['message' => 'Toko tidak ditemukan.'], 404);
         }
 
-        $orders = $store->orders()
-            ->with(['user:id,name,username', 'items', 'statusHistories', 'voucher:id,code', 'promo:id,code'])
-            ->latest()
-            ->get();
+        $period  = $request->query('period', 'all');
+        $now     = now();
 
-        $transactions  = $store->sellerTransactions()->latest()->get();
+        $dateFrom = match ($period) {
+            '7d'    => $now->copy()->subDays(7)->startOfDay(),
+            '30d'   => $now->copy()->subDays(30)->startOfDay(),
+            'month' => $now->copy()->startOfMonth(),
+            'year'  => $now->copy()->startOfYear(),
+            'custom' => $request->query('from')
+                ? \Carbon\Carbon::parse($request->query('from'))->startOfDay()
+                : null,
+            default => null,
+        };
+
+        $dateTo = $period === 'custom' && $request->query('to')
+            ? \Carbon\Carbon::parse($request->query('to'))->endOfDay()
+            : null;
+
+        $ordersQuery = $store->orders()
+            ->with(['user:id,name,username', 'items', 'statusHistories', 'voucher:id,code', 'promo:id,code'])
+            ->latest();
+
+        $txQuery = $store->sellerTransactions()->latest();
+
+        if ($dateTo) {
+            $ordersQuery->where('created_at', '<=', $dateTo);
+            $txQuery->where('created_at', '<=', $dateTo);
+        }
+
+        if ($dateFrom) {
+            $ordersQuery->where('created_at', '>=', $dateFrom);
+            $txQuery->where('created_at', '>=', $dateFrom);
+        }
+
+        $orders        = $ordersQuery->get();
+        $transactions  = $txQuery->get();
         $totalIncome   = $transactions->where('type', 'income')->sum('amount');
         $totalReversal = $transactions->where('type', 'reversal')->sum('amount');
         $netIncome     = $totalIncome - $totalReversal;
@@ -440,6 +470,7 @@ class OrderController extends Controller
                     'total_income'     => $totalIncome,
                     'total_reversal'   => $totalReversal,
                     'net_income'       => $netIncome,
+                    'last_updated'     => now()->format('d M Y, H.i'),
                 ],
                 'orders'       => $orders,
                 'transactions' => $transactions,

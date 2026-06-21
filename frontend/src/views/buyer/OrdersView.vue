@@ -49,22 +49,49 @@
         </div>
       </div>
 
-      <!-- Filter chips -->
-      <div class="flex gap-2 flex-wrap mb-5">
+      <!-- Filter bar: date range + status chips -->
+      <div class="flex flex-wrap items-center gap-2 mb-5 px-4 py-3 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <input
+          v-model="dateFrom"
+          type="date"
+          :max="dateTo || undefined"
+          placeholder="Dari"
+          class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600"
+          @focus="$event.target.style.borderColor='#c41952'"
+          @blur="$event.target.style.borderColor=''"
+        />
+        <span class="text-slate-300 text-sm">—</span>
+        <input
+          v-model="dateTo"
+          type="date"
+          :min="dateFrom || undefined"
+          placeholder="Sampai"
+          class="text-xs border border-slate-200 rounded-lg px-3 py-2 outline-none transition-colors cursor-pointer text-slate-600"
+          @focus="$event.target.style.borderColor='#c41952'"
+          @blur="$event.target.style.borderColor=''"
+        />
         <button
-          v-for="f in filters"
-          :key="f.value"
-          class="px-3.5 py-1.5 rounded-full text-[12px] font-semibold border-[1.5px] cursor-pointer transition-all"
-          :class="activeFilter === f.value
-            ? 'bg-primary text-white border-primary shadow-sm'
-            : 'border-border text-muted-foreground bg-card hover:border-primary/50 hover:text-foreground'"
-          @click="activeFilter = f.value"
-        >
-          {{ f.label }}
-          <span v-if="f.value !== 'all'" class="ml-1 opacity-60 text-[10px] font-bold">
-            {{ filterCount(f.value) }}
-          </span>
-        </button>
+          v-if="dateFrom || dateTo"
+          @click="dateFrom = ''; dateTo = ''"
+          class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 transition-all cursor-pointer"
+        >✕</button>
+
+        <div class="w-px h-5 bg-slate-200 mx-1 hidden sm:block" />
+
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="f in filters"
+            :key="f.value"
+            class="text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer"
+            :style="activeFilter === f.value
+              ? 'border-color:#c41952;color:#c41952;background:#fdf2f5'
+              : 'border-color:#e2e8f0;color:#6b7280;background:#fff'"
+            @click="activeFilter = f.value"
+          >
+            {{ f.label }}
+            <span v-if="f.value !== 'all'" class="ml-1 opacity-70">{{ filterCount(f.value) }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Empty state -->
@@ -199,6 +226,8 @@ const router = useRouter()
 const orders = ref([])
 const loading = ref(true)
 const activeFilter = ref('all')
+const dateFrom = ref('')
+const dateTo = ref('')
 
 const filters = [
   { value: 'all',               label: 'Semua' },
@@ -222,16 +251,26 @@ function stepDone(currentStatus, stepKey) {
   return si <= ci
 }
 
+const dateFilteredOrders = computed(() => {
+  if (!dateFrom.value && !dateTo.value) return orders.value
+  return orders.value.filter(o => {
+    const d = new Date(o.created_at)
+    if (dateFrom.value && d < new Date(dateFrom.value)) return false
+    if (dateTo.value && d > new Date(dateTo.value + 'T23:59:59')) return false
+    return true
+  })
+})
+
 const filteredOrders = computed(() =>
   activeFilter.value === 'all'
-    ? orders.value
-    : orders.value.filter(o => o.status === activeFilter.value)
+    ? dateFilteredOrders.value
+    : dateFilteredOrders.value.filter(o => o.status === activeFilter.value)
 )
-const doneCount   = computed(() => orders.value.filter(o => o.status === 'pesanan_selesai').length)
-const activeCount = computed(() => orders.value.filter(o => !['pesanan_selesai', 'dikembalikan'].includes(o.status)).length)
+const doneCount   = computed(() => dateFilteredOrders.value.filter(o => o.status === 'pesanan_selesai').length)
+const activeCount = computed(() => dateFilteredOrders.value.filter(o => !['pesanan_selesai', 'dikembalikan'].includes(o.status)).length)
 
 function filterCount(status) {
-  return orders.value.filter(o => o.status === status).length
+  return dateFilteredOrders.value.filter(o => o.status === status).length
 }
 
 function formatPrice(p) {

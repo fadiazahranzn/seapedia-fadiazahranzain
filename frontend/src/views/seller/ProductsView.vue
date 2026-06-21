@@ -20,12 +20,104 @@
     </Card>
 
     <template v-else>
+      <!-- Search & Filter bar -->
+      <div class="mb-4 space-y-3">
+        <!-- Search -->
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Cari nama produk atau brand..."
+            class="w-full pl-9 pr-4 h-10 text-sm border border-slate-200 rounded-xl outline-none transition-all"
+            style="font-family:inherit"
+            @focus="$event.target.style.borderColor='#c41952';$event.target.style.boxShadow='0 0 0 3px rgba(196,25,82,.08)'"
+            @blur="$event.target.style.borderColor='';$event.target.style.boxShadow=''"
+          />
+          <button v-if="search" @click="search=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <!-- Filter chips row -->
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          <!-- Kategori -->
+          <Select v-model="filterCategory">
+            <SelectTrigger
+              class="h-9 w-full sm:w-[150px] text-xs font-medium rounded-xl transition-colors"
+              :class="filterCategory && filterCategory !== 'all' ? 'border-[#c41952] text-[#c41952] bg-[#fdf2f5]' : ''"
+            >
+              <SelectValue placeholder="Semua Kategori" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="all">Semua Kategori</SelectItem>
+              <SelectItem value="Electronics">Electronics</SelectItem>
+              <SelectItem value="Fashion">Fashion</SelectItem>
+              <SelectItem value="Food">Food</SelectItem>
+              <SelectItem value="Kosmetik">Kosmetik</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <!-- Status Stok -->
+          <Select v-model="filterStock">
+            <SelectTrigger
+              class="h-9 w-full sm:w-[150px] text-xs font-medium rounded-xl transition-colors"
+              :class="filterStock && filterStock !== 'all' ? 'border-[#c41952] text-[#c41952] bg-[#fdf2f5]' : ''"
+            >
+              <SelectValue placeholder="Semua Stok" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="all">Semua Stok</SelectItem>
+              <SelectItem value="available">Tersedia (≥10)</SelectItem>
+              <SelectItem value="low">Menipis (1–9)</SelectItem>
+              <SelectItem value="empty">Habis (0)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <!-- Sort -->
+          <Select v-model="sortBy">
+            <SelectTrigger
+              class="h-9 w-full sm:w-[160px] text-xs font-medium rounded-xl transition-colors col-span-2 sm:col-span-1"
+              :class="sortBy !== 'newest' ? 'border-[#c41952] text-[#c41952] bg-[#fdf2f5]' : ''"
+            >
+              <SelectValue placeholder="Urutkan" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="newest">Terbaru</SelectItem>
+              <SelectItem value="name_asc">Nama A–Z</SelectItem>
+              <SelectItem value="name_desc">Nama Z–A</SelectItem>
+              <SelectItem value="price_asc">Harga Terendah</SelectItem>
+              <SelectItem value="price_desc">Harga Tertinggi</SelectItem>
+              <SelectItem value="stock_asc">Stok Terendah</SelectItem>
+              <SelectItem value="stock_desc">Stok Tertinggi</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <!-- Reset + count row -->
+          <div class="col-span-2 sm:contents flex items-center justify-between">
+            <button
+              v-if="hasActiveFilters"
+              @click="resetFilters"
+              class="flex items-center gap-1.5 h-9 px-3 text-xs font-medium rounded-lg border cursor-pointer transition-colors"
+              style="color:#c41952;border-color:#f5a7bf;background:#fdf2f5"
+            >
+              <X class="w-3 h-3" />
+              Reset Filter
+            </button>
+            <span class="sm:ml-auto text-xs text-slate-400">
+              {{ filteredProducts.length }} produk
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="space-y-3">
         <div v-for="i in 3" :key="i" class="h-16 bg-muted rounded-lg animate-pulse" />
       </div>
 
-      <!-- Empty -->
+      <!-- Empty all products -->
       <Card v-else-if="products.length === 0">
         <CardContent class="pt-6 text-center py-12 text-muted-foreground">
           <Package class="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -34,9 +126,19 @@
         </CardContent>
       </Card>
 
+      <!-- Empty filtered -->
+      <Card v-else-if="filteredProducts.length === 0">
+        <CardContent class="pt-6 text-center py-10 text-muted-foreground">
+          <Search class="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p class="font-medium mb-1">Tidak ada produk yang cocok</p>
+          <p class="text-sm mb-4">Coba ubah kata kunci atau filter</p>
+          <button @click="resetFilters" class="text-sm font-medium px-4 py-2 rounded-lg cursor-pointer" style="color:#c41952;background:#fdf2f5">Reset Filter</button>
+        </CardContent>
+      </Card>
+
       <!-- Product list -->
       <div v-else class="space-y-3">
-        <Card v-for="product in products" :key="product.id">
+        <Card v-for="product in filteredProducts" :key="product.id">
           <CardContent class="py-4">
             <div class="flex items-center gap-4">
               <div class="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
@@ -44,13 +146,24 @@
                 <Package v-else class="w-7 h-7 text-muted-foreground/30" />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <p class="font-medium truncate">{{ product.name }}</p>
                   <Badge v-if="product.category" variant="outline" class="text-xs shrink-0">{{ product.category }}</Badge>
+                  <span
+                    v-if="product.stock === 0"
+                    class="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                    style="background:#fee2e2;color:#dc2626"
+                  >Habis</span>
+                  <span
+                    v-else-if="product.stock < 10"
+                    class="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                    style="background:#fef9c3;color:#ca8a04"
+                  >Menipis</span>
                 </div>
                 <div class="flex items-center gap-3 mt-1 text-sm">
                   <span class="font-bold text-primary">{{ formatPrice(product.price) }}</span>
                   <span class="text-muted-foreground">Stok: {{ product.stock }}</span>
+                  <span v-if="product.brand" class="text-muted-foreground text-xs">{{ product.brand }}</span>
                 </div>
               </div>
               <div class="flex gap-2 shrink-0">
@@ -93,14 +206,19 @@
             </div>
             <div class="field">
               <label>Kategori</label>
-              <select v-model="form.category">
-                <option value="">Pilih kategori</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Fashion">Fashion</option>
-                <option value="Food">Food</option>
-                <option value="Kosmetik">Kosmetik</option>
-                <option value="Other">Other</option>
-              </select>
+              <Select v-model="form.category">
+                <SelectTrigger class="h-[38px] w-full rounded-[10px] border-[1.5px] text-[13px] px-3">
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value="none">Pilih kategori</SelectItem>
+                  <SelectItem value="Electronics">Electronics</SelectItem>
+                  <SelectItem value="Fashion">Fashion</SelectItem>
+                  <SelectItem value="Food">Food</SelectItem>
+                  <SelectItem value="Kosmetik">Kosmetik</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="field">
               <label>Brand</label>
@@ -195,10 +313,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Package, Store, X, Trash2, ImagePlus, Video } from '@lucide/vue'
+import { Plus, Package, Store, X, Trash2, ImagePlus, Video, Search } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { sellerApi } from '@/services/seller'
 import { toast } from 'vue-sonner'
 
@@ -206,13 +325,65 @@ const router = useRouter()
 const products = ref([])
 const loading = ref(true)
 const noStore = ref(false)
+
+// filters
+const search = ref('')
+const filterCategory = ref('all')
+const filterStock = ref('all')
+const sortBy = ref('newest')
+
+const hasActiveFilters = computed(() =>
+  search.value ||
+  (filterCategory.value && filterCategory.value !== 'all') ||
+  (filterStock.value && filterStock.value !== 'all') ||
+  sortBy.value !== 'newest'
+)
+
+function resetFilters() {
+  search.value = ''
+  filterCategory.value = 'all'
+  filterStock.value = 'all'
+  sortBy.value = 'newest'
+}
+
+const filteredProducts = computed(() => {
+  let list = [...products.value]
+
+  if (search.value.trim()) {
+    const q = search.value.trim().toLowerCase()
+    list = list.filter(p =>
+      p.name?.toLowerCase().includes(q) ||
+      p.brand?.toLowerCase().includes(q)
+    )
+  }
+
+  if (filterCategory.value && filterCategory.value !== 'all') {
+    list = list.filter(p => p.category === filterCategory.value)
+  }
+
+  if (filterStock.value === 'empty')          list = list.filter(p => p.stock === 0)
+  else if (filterStock.value === 'low')       list = list.filter(p => p.stock > 0 && p.stock < 10)
+  else if (filterStock.value === 'available') list = list.filter(p => p.stock >= 10)
+
+  list.sort((a, b) => {
+    if (sortBy.value === 'name_asc')    return a.name.localeCompare(b.name)
+    if (sortBy.value === 'name_desc')   return b.name.localeCompare(a.name)
+    if (sortBy.value === 'price_asc')   return a.price - b.price
+    if (sortBy.value === 'price_desc')  return b.price - a.price
+    if (sortBy.value === 'stock_asc')   return a.stock - b.stock
+    if (sortBy.value === 'stock_desc')  return b.stock - a.stock
+    return b.id - a.id
+  })
+
+  return list
+})
 const showForm = ref(false)
 const editingProduct = ref(null)
 const deletingProduct = ref(null)
 const submitting = ref(false)
 const formError = ref('')
 
-const emptyForm = { name: '', price: '', stock: '', category: '', brand: '', description: '', weight: '', image_url: '' }
+const emptyForm = { name: '', price: '', stock: '', category: 'none', brand: '', description: '', weight: '', image_url: '' }
 const form = ref({ ...emptyForm })
 // existing image URLs (from server, for edit)
 const existingPhotos = ref([])
@@ -312,7 +483,7 @@ async function submitForm() {
   submitting.value = true
   try {
     const fd = new FormData()
-    Object.entries(form.value).forEach(([k, v]) => { if (v !== '' && v != null) fd.append(k, v) })
+    Object.entries(form.value).forEach(([k, v]) => { if (v !== '' && v != null && v !== 'none') fd.append(k, v) })
     newPhotoFiles.value.forEach(f => fd.append('images[]', f))
     fd.append('existing_images', JSON.stringify(existingPhotos.value))
     if (videoFile.value) fd.append('video', videoFile.value)
@@ -347,8 +518,10 @@ async function deleteProduct() {
     toast.success('Produk dihapus.')
     deletingProduct.value = null
     fetchProducts()
-  } catch {
-    toast.error('Gagal menghapus produk.')
+  } catch (e) {
+    const msg = e.response?.data?.message || 'Gagal menghapus produk.'
+    deletingProduct.value = null
+    setTimeout(() => toast.error(msg), 100)
   } finally {
     submitting.value = false
   }

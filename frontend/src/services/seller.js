@@ -21,5 +21,5 @@ export const sellerApi = {
   getOrders: () => api.get('/seller/orders'),
   processOrder: (id) => api.patch(`/seller/orders/${id}/process`),
   getTracking: (id) => api.get(`/seller/orders/${id}/tracking`),
-  getReport: () => api.get('/seller/report'),
+  getReport: (period = 'all', from = null, to = null) => api.get('/seller/report', { params: { period, ...(from && { from }), ...(to && { to }) } }),
 }
