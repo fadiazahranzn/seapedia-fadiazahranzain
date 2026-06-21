@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
@@ -121,4 +122,9 @@ Route::middleware('auth:api')->group(function () {
 
     // Seller - tracking
     Route::get('seller/orders/{order}/tracking', [DeliveryController::class, 'trackOrder']);
+
+    // Notifications
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
 });

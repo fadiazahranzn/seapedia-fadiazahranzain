@@ -123,7 +123,7 @@
       </div>
 
       <!-- Right: checkout panel -->
-      <div class="bg-card border rounded-2xl overflow-hidden sticky top-[76px]">
+      <div ref="checkoutPanelRef" class="bg-card border rounded-2xl overflow-hidden sticky top-[76px]">
 
         <!-- Panel header -->
         <div class="px-5 py-4 border-b bg-muted/30">
@@ -311,14 +311,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { ShoppingCart, Store, Package, Trash2, Check, X, Tag, Percent, Sparkles, Plus } from '@lucide/vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { buyerApi } from '@/services/buyer'
 import { toast } from 'vue-sonner'
 
 const router = useRouter()
+const route = useRoute()
+const checkoutPanelRef = ref(null)
 const cart = ref(null)
 const addresses = ref([])
 const preview = ref(null)
@@ -451,5 +453,12 @@ async function doCheckout() {
   } finally { checkingOut.value = false }
 }
 
-onMounted(() => { loadCart(); loadAddresses() })
+onMounted(async () => {
+  await Promise.all([loadCart(), loadAddresses()])
+  if (route.query.buyNow) {
+    await nextTick()
+    checkoutPanelRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    router.replace({ query: {} })
+  }
+})
 </script>

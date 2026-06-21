@@ -16,14 +16,10 @@
         <nav class="nav-links">
           <RouterLink to="/">Beranda</RouterLink>
           <RouterLink to="/products">Produk</RouterLink>
-          <RouterLink to="/reviews">Ulasan</RouterLink>
         </nav>
 
         <div class="nav-actions">
-          <button class="nav-icon-btn notif-btn" title="Notifikasi">
-            <Bell :size="16" />
-            <span class="notif-dot" />
-          </button>
+          <NotificationDropdown v-if="auth.isLoggedIn" :iconSize="16" />
 
           <RouterLink to="/buyer/cart" class="nav-icon-btn" v-if="auth.isLoggedIn && auth.activeRole === 'buyer'">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -48,7 +44,6 @@
       <div v-if="mobileOpen" class="mobile-nav">
         <RouterLink to="/" @click="mobileOpen = false">Beranda</RouterLink>
         <RouterLink to="/products" @click="mobileOpen = false">Produk</RouterLink>
-        <RouterLink to="/reviews" @click="mobileOpen = false">Ulasan</RouterLink>
         <template v-if="!auth.isLoggedIn">
           <RouterLink to="/login" @click="mobileOpen = false">Masuk</RouterLink>
           <RouterLink to="/register" @click="mobileOpen = false">Daftar</RouterLink>
@@ -75,15 +70,14 @@
           <div class="footer-links">
             <RouterLink to="/">Beranda</RouterLink>
             <RouterLink to="/products">Produk</RouterLink>
-            <RouterLink to="/reviews">Ulasan</RouterLink>
           </div>
         </div>
         <div class="footer-col">
           <div class="footer-heading">Bergabung</div>
           <div class="footer-links">
-            <RouterLink to="/register">Daftar Pembeli</RouterLink>
-            <RouterLink to="/register">Buka Toko</RouterLink>
-            <RouterLink to="/register">Jadi Driver</RouterLink>
+            <RouterLink to="/register?role=buyer">Daftar Pembeli</RouterLink>
+            <RouterLink to="/register?role=seller">Buka Toko</RouterLink>
+            <RouterLink to="/register?role=driver">Jadi Driver</RouterLink>
           </div>
         </div>
       </div>
@@ -98,8 +92,9 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
-import { Menu, Bell } from '@lucide/vue'
+import { Menu } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
+import NotificationDropdown from '@/components/shared/NotificationDropdown.vue'
 
 const auth = useAuthStore()
 const mobileOpen = ref(false)
@@ -154,12 +149,6 @@ const mobileOpen = ref(false)
 .nav-links a.router-link-exact-active { color: #c41952; background: #fce4ec; }
 
 .nav-actions { display: flex; align-items: center; gap: 8px; }
-.notif-btn { position: relative; }
-.notif-dot {
-  position: absolute; top: 6px; right: 6px;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #c41952; border: 1.5px solid #fff;
-}
 
 .nav-icon-btn {
   width: 36px; height: 36px; border-radius: 8px;

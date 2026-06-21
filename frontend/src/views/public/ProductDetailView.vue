@@ -228,7 +228,7 @@ async function addToCart(buyNow = false) {
   try {
     await buyerApi.addItem({ product_id: product.value.id, quantity: qty.value })
     toast.success('Produk ditambahkan ke keranjang!')
-    router.push(buyNow ? '/buyer/checkout' : '/buyer/cart')
+    router.push(buyNow ? '/buyer/cart?buyNow=1' : '/buyer/cart')
   } catch (e) {
     const msg = e.response?.data?.message || 'Gagal menambahkan.'
     if (e.response?.data?.conflict) {
@@ -236,7 +236,7 @@ async function addToCart(buyNow = false) {
         await buyerApi.clearCart()
         await buyerApi.addItem({ product_id: product.value.id, quantity: qty.value })
         toast.success('Produk ditambahkan ke keranjang!')
-        router.push(buyNow ? '/buyer/checkout' : '/buyer/cart')
+        router.push(buyNow ? '/buyer/cart?buyNow=1' : '/buyer/cart')
       }
     } else {
       toast.error(msg)

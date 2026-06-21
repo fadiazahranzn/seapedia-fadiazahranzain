@@ -9,6 +9,7 @@ use App\Models\Promo;
 use App\Models\SellerTransaction;
 use App\Models\Voucher;
 use App\Models\WalletTransaction;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -272,6 +273,27 @@ class OrderController extends Controller
             return $order;
         });
 
+        // Notif ke buyer
+        NotificationService::send(
+            $user->id,
+            'order_created',
+            'Pesanan Berhasil Dibuat',
+            "Pesanan #{$order->id} sedang dikemas oleh penjual.",
+            "/buyer/orders/{$order->id}"
+        );
+
+        // Notif ke seller
+        $order->load('store.user');
+        if ($order->store?->user_id) {
+            NotificationService::send(
+                $order->store->user_id,
+                'new_order',
+                'Pesanan Baru Masuk!',
+                "Ada pesanan baru #{$order->id} dari pembeli. Segera proses.",
+                "/seller/orders"
+            );
+        }
+
         return response()->json([
             'message' => 'Checkout berhasil!',
             'data'    => $order->load(['items', 'store', 'statusHistories', 'voucher', 'promo']),
@@ -399,6 +421,15 @@ class OrderController extends Controller
                 ['status' => 'available']
             );
         });
+
+        // Notif ke buyer
+        NotificationService::send(
+            $order->user_id,
+            'order_processed',
+            'Pesanan Sedang Dikirim ke Kurir',
+            "Pesanan #{$order->id} sudah selesai dikemas dan menunggu kurir.",
+            "/buyer/orders/{$order->id}"
+        );
 
         return response()->json([
             'message' => 'Pesanan berhasil diproses.',

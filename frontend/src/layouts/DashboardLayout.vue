@@ -27,6 +27,7 @@
 
         <div class="flex items-center gap-2">
           <span class="text-sm text-muted-foreground hidden sm:inline">{{ auth.user?.name }}</span>
+          <NotificationDropdown :iconSize="16" />
           <Button variant="ghost" size="sm" @click="router.push('/select-role')" v-if="(auth.user?.roles?.length ?? 0) > 1">
             <RefreshCw class="w-4 h-4" />
           </Button>
@@ -70,6 +71,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
+import NotificationDropdown from '@/components/shared/NotificationDropdown.vue'
 
 const props = defineProps({ role: String })
 const auth = useAuthStore()

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +80,15 @@ class DeliveryController extends Controller
             ]);
         });
 
+        // Notif ke buyer
+        NotificationService::send(
+            $delivery->order->user_id,
+            'order_picked',
+            'Pesanan Sedang Dikirim',
+            "Pesanan #{$delivery->order_id} sudah diambil kurir dan dalam perjalanan ke kamu.",
+            "/buyer/orders/{$delivery->order_id}"
+        );
+
         return response()->json([
             'message' => 'Job berhasil diambil!',
             'data'    => $delivery->fresh(['order.store', 'order.statusHistories']),
@@ -118,6 +128,27 @@ class DeliveryController extends Controller
                 'created_at' => now(),
             ]);
         });
+
+        // Notif ke buyer
+        NotificationService::send(
+            $delivery->order->user_id,
+            'order_completed',
+            'Pesanan Telah Tiba!',
+            "Pesanan #{$delivery->order_id} sudah diterima. Terima kasih sudah belanja di SEAPEDIA!",
+            "/buyer/orders/{$delivery->order_id}"
+        );
+
+        // Notif ke seller
+        $delivery->order->load('store');
+        if ($delivery->order->store?->user_id) {
+            NotificationService::send(
+                $delivery->order->store->user_id,
+                'order_completed',
+                'Pesanan Selesai',
+                "Pesanan #{$delivery->order_id} telah berhasil diterima pembeli.",
+                "/seller/orders"
+            );
+        }
 
         return response()->json([
             'message' => 'Pengiriman selesai!',

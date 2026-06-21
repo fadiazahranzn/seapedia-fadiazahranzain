@@ -11,7 +11,7 @@
           <div class="brand-icon">S</div>
           <span class="brand-name">SEAPEDIA</span>
         </div>
-        <h1 class="form-title">Buat akun baru</h1>
+        <h1 class="form-title">{{ pageTitle }}</h1>
         <p class="form-subtitle">Isi data di bawah untuk mendaftar</p>
       </div>
 
@@ -81,14 +81,26 @@
 
         <div class="form-group">
           <label for="role">Daftar sebagai</label>
-          <div class="select-wrap">
-            <select id="role" v-model="form.role" required>
-              <option value="">Pilih role</option>
-              <option value="buyer">Buyer</option>
-              <option value="seller">Seller</option>
-              <option value="driver">Driver</option>
-            </select>
-            <ChevronDown :size="14" class="select-icon" />
+          <div v-if="lockedRole" class="role-badge">
+            <span class="role-badge-icon">{{ roleIcon }}</span>
+            {{ roleLabel }}
+          </div>
+          <div v-else class="custom-select" :class="{ open: dropdownOpen }" @click="dropdownOpen = !dropdownOpen" v-click-outside="() => dropdownOpen = false">
+            <div class="custom-select-trigger">
+              <span :class="{ placeholder: !form.role }">{{ form.role ? roleOptions.find(o => o.value === form.role)?.label : 'Pilih role' }}</span>
+              <ChevronDown :size="14" class="select-icon" :class="{ rotated: dropdownOpen }" />
+            </div>
+            <div class="custom-select-menu">
+              <div
+                v-for="opt in roleOptions"
+                :key="opt.value"
+                class="custom-select-option"
+                :class="{ selected: form.role === opt.value }"
+                @click.stop="form.role = opt.value; dropdownOpen = false"
+              >
+                {{ opt.label }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -112,16 +124,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const vClickOutside = {
+  mounted(el, binding) {
+    el._clickOutside = (e) => { if (!el.contains(e.target)) binding.value(e) }
+    document.addEventListener('mousedown', el._clickOutside)
+  },
+  unmounted(el) { document.removeEventListener('mousedown', el._clickOutside) },
+}
 import { toast } from 'vue-sonner'
 import { Eye, EyeOff, AlertCircle, ChevronDown } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
-const form = ref({ name: '', username: '', email: '', password: '', password_confirmation: '', role: '' })
+const lockedRole = ['buyer', 'seller', 'driver'].includes(route.query.role) ? route.query.role : null
+
+const roleMeta = {
+  buyer:  { label: 'Pembeli (Buyer)',  icon: '🛍️', title: 'Daftar sebagai Pembeli' },
+  seller: { label: 'Penjual (Seller)', icon: '🏪', title: 'Buka Toko di SEAPEDIA' },
+  driver: { label: 'Driver',           icon: '🚗', title: 'Daftar sebagai Driver' },
+}
+const pageTitle = computed(() => lockedRole ? roleMeta[lockedRole].title : 'Buat akun baru')
+const roleLabel = computed(() => lockedRole ? roleMeta[lockedRole].label : '')
+const roleIcon  = computed(() => lockedRole ? roleMeta[lockedRole].icon : '')
+
+const form = ref({ name: '', username: '', email: '', password: '', password_confirmation: '', role: lockedRole ?? '' })
+const dropdownOpen = ref(false)
+const roleOptions = [
+  { value: 'buyer',  label: 'Buyer' },
+  { value: 'seller', label: 'Seller' },
+  { value: 'driver', label: 'Driver' },
+]
 const error = ref('')
 const loading = ref(false)
 const showPw1 = ref(false)
@@ -302,16 +340,73 @@ select option { background: #fff; color: #1a1a1a; }
 }
 .pw-toggle:hover { color: #c41952; }
 
-.select-wrap { position: relative; }
-.select-wrap select { padding-right: 32px; cursor: pointer; }
-.select-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #c4a8b4;
-  pointer-events: none;
+.role-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1.5px solid #f3e0e6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1a1a1a;
 }
+.role-badge-icon { font-size: 15px; }
+
+.custom-select {
+  position: relative;
+  user-select: none;
+}
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1.5px solid #f3e0e6;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+.custom-select.open .custom-select-trigger,
+.custom-select-trigger:hover {
+  border-color: #c41952;
+  box-shadow: 0 0 0 3px rgba(196,25,82,0.10);
+}
+.custom-select-trigger .placeholder { color: #c4a8b4; }
+.select-icon {
+  color: #c4a8b4;
+  flex-shrink: 0;
+  transition: transform .2s;
+}
+.select-icon.rotated { transform: rotate(180deg); }
+.custom-select-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: #fff;
+  border: 1.5px solid #f3e0e6;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(196,25,82,0.10);
+  z-index: 50;
+}
+.custom-select.open .custom-select-menu { display: block; }
+.custom-select-option {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.custom-select-option:hover { background: #fff1f4; color: #c41952; }
+.custom-select-option.selected { background: #fce4ec; color: #c41952; font-weight: 600; }
 
 .error-box {
   display: flex;

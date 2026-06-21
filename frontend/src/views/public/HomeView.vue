@@ -231,11 +231,10 @@
             <span class="section-label">Testimoni</span>
             <h2 class="section-title" style="margin-bottom:0;">Apa Kata Mereka?</h2>
           </div>
-          <RouterLink to="/reviews" class="btn-see-all">Semua Ulasan →</RouterLink>
         </div>
 
         <div class="reviews-grid">
-          <div v-for="review in latestReviews" :key="review.id" class="review-card">
+          <div v-for="review in staticReviews" :key="review.id" class="review-card">
             <div class="review-stars">
               <Star
                 v-for="i in 5"
@@ -247,16 +246,12 @@
             </div>
             <p class="review-text">{{ review.comment }}</p>
             <div class="review-author">
-              <div class="review-avatar">{{ review.reviewer_name?.charAt(0)?.toUpperCase() }}</div>
+              <div class="review-avatar">{{ review.name.charAt(0) }}</div>
               <div>
-                <div class="review-name">{{ review.reviewer_name }}</div>
-                <div class="review-role">Verified Buyer</div>
+                <div class="review-name">{{ review.name }}</div>
+                <div class="review-role">{{ review.role }}</div>
               </div>
             </div>
-          </div>
-
-          <div v-if="!latestReviews.length && !loading" class="empty-state">
-            <p>Belum ada ulasan.</p>
           </div>
         </div>
       </div>
@@ -286,6 +281,15 @@ import api from '@/services/api'
 const router = useRouter()
 const products = ref([])
 const latestReviews = ref([])
+
+const staticReviews = [
+  { id: 1, rating: 5, comment: 'Pengiriman super cepat, barang sampai dalam kondisi sempurna. Penjualnya juga ramah dan responsif!', name: 'Andi Pratama', role: 'Verified Buyer' },
+  { id: 2, rating: 5, comment: 'Produk original 100%, harga lebih murah dari toko lain. Sudah beli 3 kali di sini dan selalu puas!', name: 'Siti Rahayu', role: 'Verified Buyer' },
+  { id: 3, rating: 4, comment: 'Fitur aplikasinya mudah dipakai, buka toko juga gampang banget. Omzet sudah naik 2x sejak pakai SEAPEDIA.', name: 'Budi Santoso', role: 'Verified Seller' },
+  { id: 4, rating: 5, comment: 'Sebagai driver, orderan selalu ada dan bayarannya langsung masuk ke dompet. Sangat membantu!', name: 'Reza Firmansyah', role: 'Verified Driver' },
+  { id: 5, rating: 5, comment: 'Customer service cepat tanggap. Ada masalah langsung diselesaikan, tidak perlu nunggu lama.', name: 'Dewi Kusuma', role: 'Verified Buyer' },
+  { id: 6, rating: 4, comment: 'Pilihan produk elektroniknya lengkap banget. Bisa bandingkan harga dari banyak toko sekaligus, mantap!', name: 'Fajar Nugroho', role: 'Verified Buyer' },
+]
 const loading = ref(true)
 
 const tabs = ['Semua', 'Smartphone', 'Laptop', 'Audio', 'Gaming']
